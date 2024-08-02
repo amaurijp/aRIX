@@ -1,3 +1,0 @@
-parameter,filenames_to_concatenate,hold_filenames,hold_instances_number
-microbe_species,"( microbes_1, microbes_2 )",FALSE,FALSE
-log_killing,( killing_3 ),FALSE,FALSE
