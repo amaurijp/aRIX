@@ -1,0 +1,17 @@
+List of parameters set to be extracted. 
+Introduce one of these paramenters in the field "parameter to extract" in file ".../Settings/SE_inputs.csv".
+
+Numerical parameters ('parameter' -> 'example'):
+'microbe_log_reduction' -> '1.32 log'
+'microbe_mic_inhibition' -> '1.32 mg mL-1'
+'microbe_percentage_killing' -> '1.32 %'
+'nanomaterial_concentration' -> '1.32 mg mL-1'
+'nanomaterial_size' -> '1.32 nm'
+'nanomaterial_surface_area' -> '1.32 m2 g-1'
+'nanomaterial_zeta_potential' -> '1.32 mV'
+'toxicity_ec50' -> '1.32 mg L-1'
+'toxicity_ld50' -> '1.32 mg kg-1'
+'toxicity_lc50' -> '1.32 mg L-1'
+'toxicity_ic50' -> '1.32 mg L-1'
+
+Categorical parameters:
