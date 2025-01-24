@@ -1,7 +1,6 @@
-List of parameters set to be extracted. 
-Introduce one of these paramenters in the field "parameter to extract" in file ".../Settings/SE_inputs.csv".
+List of parameters set to be extracted. Introduce one of these paramenters in the field "parameter to extract" in file ".../Settings/SE_inputs.csv".
 
-Numerical parameters ('parameter' -> 'example'):
+Numerical parameters are extracted with a combination of LLM prompts (defined in file .../Modules/LLM.py) and REGEX patterns (defined in file .../Modules/functions_PARAMETERS.py). Check available numerical parameters bellow (parameter -> example):
 'microbe_log_reduction' -> '1.32 log'
 'microbe_mic_inhibition' -> '1.32 mg mL-1'
 'microbe_percentage_killing' -> '1.32 %'
@@ -14,4 +13,7 @@ Numerical parameters ('parameter' -> 'example'):
 'toxicity_lc50' -> '1.32 mg L-1'
 'toxicity_ic50' -> '1.32 mg L-1'
 
-Categorical parameters:
+Categorical parameters are extracted with function regex.search(input_string, cat_term), where argument "input_string" represents text documents from the corpus being scanned (sentences or paragraphs), and "cat_term" represents catergorical terms of interest that are defined in a JSON file in .../Inputs/ner_rules.json. Check available categorical parameters bellow:
+
+
+
