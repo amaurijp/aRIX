@@ -19,8 +19,8 @@ Check available numerical parameters bellow (parameter -> example):
 'toxicity_ic50' -> '1.32 mg L-1'
 
 Categorical parameters are extracted with function 
-regex.search(input_string, cat_term), 
-where argument "input_string" represents text documents 
+regex.search(cat_term, input_string), 
+where argument "input_string" represents input documents 
 from the corpus being scanned (sentences or paragraphs), 
 and "cat_term" represents catergorical terms of interest 
 that are defined in a JSON file in .../Inputs/ner_rules.json. 
