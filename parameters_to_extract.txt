@@ -21,7 +21,7 @@ Check available numerical parameters bellow (parameter -> example):
 Categorical parameters are extracted with function 
 regex.search(cat_term, input_string), 
 where argument "input_string" represents input documents 
-from the corpus being scanned (sentences or paragraphs), 
+from the corpus being scanned (sentences, paragraphs or full texts), 
 and "cat_term" represents catergorical terms of interest 
 that are defined in a JSON file in .../Inputs/ner_rules.json. 
 Check available categorical parameters bellow:
