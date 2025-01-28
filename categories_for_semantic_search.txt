@@ -1,0 +1,4 @@
+List of categories with semantically related terms.
+Terms present in each category are found during the corpus 
+processing by calculating cosine similarities of word-vectors
+embedings. The list is bellow:
