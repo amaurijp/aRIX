@@ -102,5 +102,6 @@ After corpus processing, **search routines** can be set to identify and extract 
 - **Topic-based searches** rely on **LDA & LSA document-topic matrices**.
 - **LLM prompts** assist in **automatic parameter extraction**.
 - For the `semantic_entry`, the terms present in each category [🔗 Available Categories](https://github.com/amaurijp/arix_v2/blob/main/categories_for_semantic_search.txt) are found during corpus processing by calculating cosine similarities of the word-vector embeddings and are recorded in the json file `.../Inputs/ner\_rules.json`. The match attempt will be done using function `regex.search( cat_term , input_document )`.
+- If `search_token_by_token` is `True`, each token (token~i) separated by the space character ` ` in the input document will be split and introduced in function `regex.search( text_to_be_found , token~i )`. Argument `False` will make the input document go through the function `regex.search( text_to_be_found , input_document )`. This argument is only considered by the program if an entry is provided in the field `semantic_entry`.
 
 ---
