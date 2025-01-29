@@ -1,8 +1,11 @@
 ## Corpus processing
+Use command "process_collection.py" to:
+1 - 
 
 
 ## Search routines are defined in file ".../Settings/SE_inputs.csv". 
-Description of each field goes bellow:
+After corpus processing, search routines can be set to identify and extract relevant information from the corpus.
+Description of each field present in ".../Settings/SE_inputs.csv" file goes bellow:
 
 1 - *filename:* insert the name of the ".csv" file that will be generated and saved on path ".../Outputs/extracted/". This .csv file contains the indexed documents in which relevant information was found after the program scanned the entire corpus. Use the following range of characters as input:* "A-Z", "a-z", "0-9" and "_". Input example: "green_synt_01".
 
