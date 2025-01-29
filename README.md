@@ -1,5 +1,5 @@
 # Corpus processing
-First paste the documents (PDF, XML or a single Web of Science CSV report) into folder ".../Articles_to_add/". 
+First paste the documents files (PDF, XML or a single Web of Science CSV report) into folder ".../Articles_to_add/". 
 Then use command ".../process_collection.py" to:
 
 1 - Index each input document (PDF, XML or Web of Science CSV report) and convert it to plaintext format.
