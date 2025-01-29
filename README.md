@@ -25,7 +25,7 @@ To perform corpus processing, some basic inputs must be provided in `.../process
 1. **`article_file_type`** – Choose the input document file type: `webscience_csv_report`, `pdf`, or `xml`.
 2. **`min_token_appearance_in_corpus`** – Set the minimum token appearance count to be considered in the models (**default: 10**).
 3. **`tfidf_batch_size`** – Set the batch size for **TF-IDF matrix generation** (**default: 1000**).
-4. **`words_to_test_wv_models`** – Introduce sample tokens to evaluate the results of **word-vector embeddings**. Example (for a corpus on **nanotechnology**): `nanoparticles", "nanosheets", "aunps", "gold", "nps", "cu", "copper", "molybdenum`.
+4. **`words_to_test_wv_models`** – Introduce sample tokens to evaluate the results of **word-vector embeddings**. Example (for a corpus on **nanotechnology**): `nanoparticles, nanosheets, aunps, gold, nps, cu, copper, molybdenum`.
 
 ---
 
