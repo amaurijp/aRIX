@@ -92,7 +92,7 @@ After corpus processing, **search routines** can be set to identify and extract 
 | **`lsa_articles_topic`** | Insert a **topic vector** to be matched with **LSA article-level** topics. |
 | **`topic_search_mode`** | Use **"cosine"** for **cosine similarity-based** topic matching. |
 | **`cos_thr`** | **Set cosine similarity threshold** (0 to 1). |
-| **`num_param`** | Choose a **numerical parameter** for extraction. |
+| **`num_param`** | Choose a **numerical parameter** for matching in the input document. |
 | **`filter_section`** | Use **trained CNN filters** to identify sections (*introduction, methodology, results*). |
 
 ---
@@ -104,6 +104,7 @@ After corpus processing, **search routines** can be set to identify and extract 
 - The field `lower_sentence_for_semantic` is only considered by the program if an entry is provided in the field `semantic_entry`.
 - For fields `lda_sents_topic`, `lda_articles_topic`, `lsa_sents_topic`, and `lsa_articles_topic`, use the entry in the format `( mag_i * topic_i)`, where `topic_i` is one of the `d` topics defined during the LDA and LSA training and `mag` is the magnitude of this specific topic. For example, considering that `d = 100`, the entry `(1, 3, 5, 99)` generates a topic vector array in the format: `[1, 0, 1, 0, 1, 0, ..., 1, 0]`. The magnitudes of the vector components can be modified as `(2*1, -1*3, 3*5, 2*99)` → `[2, 0, -1, 0, 3, 0, ..., 2, 0]`. If the user does not want to find matches using the topic search engine, insert `None` in the field respective field (`lda_sents_topic`, `lda_articles_topic`, `lsa_sents_topic`, and `lsa_articles_topic`).
 - The value set in `cos_thr` will be applied for both LDA and LSA topic engines and this argument is only considered by the program if an entry is provided for the Tm engine in fields `lda_sents_topic`, `lda_articles_topic`, `lsa_sents_topic`, and `lsa_articles_topic`.
+- If an entry is provided in `num_param`, a search will be performed to locate the units related to certain parameters in the input document. For example, if `nanomaterial_size` is used, input documents containing text fragments such as `50 nm` or `0.4 um` will be selected by the program. See the [current list of available numerical parameters](https://github.com/amaurijp/arix_v2/blob/main/parameters_to_extract.txt).
 - The **program uses convolutional neural networks (CNNs)** to classify document sections.
 - **Topic-based searches** rely on **LDA & LSA document-topic matrices**.
 - **LLM prompts** assist in **automatic parameter extraction**.
