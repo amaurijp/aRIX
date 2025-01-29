@@ -1,5 +1,6 @@
 # Corpus processing
-First paste the documents (PDF, XML or a single Web of Science CSV report) into folder ".../Articles_to_add/". Then use command ".../process_collection.py" to:
+First paste the documents (PDF, XML or a single Web of Science CSV report) into folder ".../Articles_to_add/". 
+Then use command ".../process_collection.py" to:
 
 1 - Index each input document (PDF, XML or Web of Science CSV report) and convert it to plaintext format.
 
@@ -19,8 +20,10 @@ First paste the documents (PDF, XML or a single Web of Science CSV report) into 
 
 9 - Train the section filter (for Introduction, Methodology and Results sections) with convolutional neuron networks (CNNs) and export to ".../Outputs/models/".
 
+
 # Definitions in ".../process_collection.py"
-To perform the corpus processing, some basic inputs must be provided in ".../process_collection.py". These are:
+To perform the corpus processing, some basic inputs must be provided in ".../process_collection.py". 
+These are:
 
 1 - *article_file_type:* choose the input document file type ("webscience_csv_report", "pdf" or "xml").
 
