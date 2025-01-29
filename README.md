@@ -1,3 +1,6 @@
+## Corpus processing
+
+
 ## Search routines are defined in file ".../Settings/SE_inputs.csv". 
 Description of each field goes bellow:
 
