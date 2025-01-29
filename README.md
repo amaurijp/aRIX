@@ -1,5 +1,5 @@
-## Corpus processing
-First paste the documents (PDF, XML or a single Web of Science CSV report) into folder ".../Articles_to_add/". Then use command "process_collection.py" to:
+# Corpus processing
+First paste the documents (PDF, XML or a single Web of Science CSV report) into folder ".../Articles_to_add/". Then use command ".../process_collection.py" to:
 
 1 - Index each input document (PDF, XML or Web of Science CSV report) and convert it to plaintext format.
 
@@ -19,10 +19,19 @@ First paste the documents (PDF, XML or a single Web of Science CSV report) into 
 
 9 - Train the section filter (for Introduction, Methodology and Results sections) with convolutional neuron networks (CNNs) and export to ".../Outputs/models/".
 
+# Definitions in ".../process_collection.py"
+To perform the corpus processing, some basic inputs must be provided in ".../process_collection.py". These are:
+
+1 - *article_file_type:* choose the input document file type ("webscience_csv_report", "pdf" or "xml").
+
+2 - *min_token_appereance_in_corpus:* set the minimum token appearence count to be considered in the models (defaut value is 10).
+
+3 - *tfidf_batch_size:* set the batch size to be used for TFIDF matrix generation (defaut value is 1000).
+
+4 - *words_to_test_wv_models:* introduce sample tokens to evaluate the results of the word-vectors embeddings (for example, in a corpus with articles of nanotechnology, tokens "nanoparticles", "nanosheets", "aunps", "gold", "nps", "cu", "copper", "molybdenum" are relevant).
 
 
-
-## Search routines are defined in file ".../Settings/SE_inputs.csv". 
+# Search routines are defined in file ".../Settings/SE_inputs.csv". 
 After corpus processing, search routines can be set to identify and extract relevant information from the corpus.
 Description of each field present in ".../Settings/SE_inputs.csv" file goes bellow:
 
