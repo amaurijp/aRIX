@@ -1,5 +1,6 @@
 # Corpus processing
 First paste the documents files (PDF, XML or a single Web of Science CSV report) into folder ".../Articles_to_add/". 
+
 Then use command ".../process_collection.py" to:
 
 1 - Index each input document (PDF, XML or Web of Science CSV report) and convert it to plaintext format.
@@ -23,6 +24,7 @@ Then use command ".../process_collection.py" to:
 
 # Definitions in ".../process_collection.py"
 To perform the corpus processing, some basic inputs must be provided in ".../process_collection.py". 
+
 These are:
 
 1 - *article_file_type:* choose the input document file type ("webscience_csv_report", "pdf" or "xml").
@@ -36,6 +38,7 @@ These are:
 
 # Search routines are defined in file ".../Settings/SE_inputs.csv". 
 After corpus processing, search routines can be set to identify and extract relevant information from the corpus.
+
 Description of each field present in ".../Settings/SE_inputs.csv" file goes bellow:
 
 1 - *filename:* insert the name of the ".csv" file that will be generated and saved on path ".../Outputs/extracted/". This .csv file contains the indexed documents in which relevant information was found after the program scanned the entire corpus. Use the following range of characters as input:* "A-Z", "a-z", "0-9" and "_". Input example: "green_synt_01".
