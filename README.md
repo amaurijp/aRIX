@@ -101,6 +101,6 @@ After corpus processing, **search routines** can be set to identify and extract 
 - The **program uses convolutional neural networks (CNNs)** to classify document sections.
 - **Topic-based searches** rely on **LDA & LSA document-topic matrices**.
 - **LLM prompts** assist in **automatic parameter extraction**.
-- The terms present in each category [🔗 Available Categories](https://github.com/amaurijp/arix_v2/blob/main/categories_for_semantic_search.txt) are found during corpus processing by calculating cosine similarities of the word-vector embeddings and are recorded in the json file `.../Inputs/ner\_rules.json`. The match attempt will be done using function `regex.search( cat_term , input_document )`.
+- For the `semantic_entry`, the terms present in each category [🔗 Available Categories](https://github.com/amaurijp/arix_v2/blob/main/categories_for_semantic_search.txt) are found during corpus processing by calculating cosine similarities of the word-vector embeddings and are recorded in the json file `.../Inputs/ner\_rules.json`. The match attempt will be done using function `regex.search( cat_term , input_document )`.
 
 ---
