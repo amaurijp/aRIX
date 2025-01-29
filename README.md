@@ -1,3 +1,6 @@
+#Search routines:
+##Search routines are defined in file ".../Settings/SE_inputs.csv". Description of each field goes bellow:
+
 1 - *filename:* insert the name of the ".csv" file that will be generated and saved on path ".../Outputs/extracted/". This .csv file contains the indexed documents in which relevant information was found after the program scanned the entire corpus. Use the following range of characters as input:* "A-Z", "a-z", "0-9" and "_". Input example: "green_synt_01".
 
 2 - *index_list_name:* insert the name of an already generated ".csv" file present in folder ".../Outputs/extracted/". The program will search only for the documents indexed in the ".csv" file. If a complete scan over the whole corpus is wanted, insert "None".
