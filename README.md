@@ -1,16 +1,23 @@
 ## Corpus processing
-First paste the documents (PDF, XML or Web of Science CSV report) into folder: 
-Use command "process_collection.py" to:
+First paste the documents (PDF, XML or a single Web of Science CSV report) into folder ".../Articles_to_add/". Then use command "process_collection.py" to:
 
 1 - Index each input document (PDF, XML or Web of Science CSV report) and convert it to plaintext format.
-2 - Separate (if possible) each document section (Introduction, Methodology and Results) and export to ".../Outputs/sections/". Does not work when a Web of Science CSV report is used as input, since it has only the article abstract.
+
+2 - Separate (if possible) each document section (Introduction, Methodology and Results) and export to ".../Outputs/sections/" (does not work when a Web of Science CSV report is used as input, since it has only the article abstract).
+
 3 - Split and index each sentence and export to ".../Outputs/sents_raw/".
+
 4 - Filter sentences (with REGEX scripts) and export to ".../Outputs/sents_filtered/".
+
 5 - Find unique tokens and export to ".../Outputs/ngrams/".
-6 - Generate document-token matrix (TFIDF) and export to ".../Outputs/tfidf/".
+
+6 - Generate the document-token matrix (TFIDF) and export to ".../Outputs/tfidf/".
+
 7 - Generate document-topic matrices via Latent Semantic Analysis (LSA) and Latent Dirichlet Allocation approaches and export to ".../Outputs/models/".
+
 8 - Generate word-vectors embeddings via Word2-vec approach and export to ".../Outputs/wv/".
-9 - Train the section filter (for Introduction, Methodology and Results sections) with convolutional neuron networks (CNNs).
+
+9 - Train the section filter (for Introduction, Methodology and Results sections) with convolutional neuron networks (CNNs) and export to ".../Outputs/models/".
 
 
 
