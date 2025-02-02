@@ -129,10 +129,10 @@ The search results are described in the file `.../Settings/SE_inputs.csv`. Detai
 
 ## Consolidating parameters in a single data-frame
 
-The `.../Settings/DFs_to_consolidate.csv` file contains the definitions to consolidate all extracted parameters in a single CSV dataframe name `_consolidated_DF.csv` (saved in `.../dataframes/`). Details on each field are bellow.
+`.../Settings/DFs_to_consolidate.csv` contains the definitions to consolidate all extracted parameters in a single CSV dataframe name `_consolidated_DF.csv` (saved in `.../dataframes/`). Details on each field are bellow.
 
 ### 1. `parameter`
-- Name of the parameter that will be concatenated in a column in the consolidated data-frame. 
+- Name the parameter that will be concatenated in a column in the consolidated data-frame. 
 - **Allowed characters**: `A-Z`, `a-z`, `0-9`, and `_`.
 - **Example**: `size_of_nanoparticles`.
 
