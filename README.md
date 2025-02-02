@@ -111,3 +111,12 @@ After corpus processing, **search routines** can be set to identify and extract 
 - **Topic-based searches** rely on **LDA & LSA document-topic matrices**.
 - **LLM prompts** assist in **automatic parameter extraction**.
 ---
+## Search results
+
+The search results are described in the fields
+- `total_finds`: total number of matches found with the specific set of inputs. In one document (e.g., sentence or article) there can be more than one match.
+- `article_finds`: number of articles in which at least one match was found with the specific set of inputs.
+- `search_status`: indicates if the search scan is `finished` or `ongoing`.
+- `total_extracted`: total number of parameter extractions performed for this specific set of inputs. In one document (e.g., sentence or article) there can be more than one extraction.
+- `article_extracted`: number of articles in which at least one parameter was extracted with the specific set of inputs.
+- `export\_status`: indicates if the extraction process is `finished` or `ongoing`.
