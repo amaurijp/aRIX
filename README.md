@@ -38,7 +38,7 @@ To perform corpus processing, some basic inputs must be provided in `.../process
 After corpus processing, **search routines** can be set to identify and extract relevant information from the corpus. Each field present in `.../Settings/SE_inputs.csv` is described below:
 
 ### 1. `filename`
-- **Description**: Name of the `.csv` file to be generated and saved at `.../Outputs/extracted/`.
+- **Description**: Name of the `.csv` files to be generated and saved at `.../Outputs/extracted/` (matched sentences) and `.../Outputs/dataframes/` (exported parameters).
 - **Allowed characters**: `A-Z`, `a-z`, `0-9`, and `_`.
 - **Example**: `green_synt_01`.
 
@@ -127,5 +127,13 @@ The search results are described in the file `.../Settings/SE_inputs.csv`. Detai
 
 ---
 
-## Exporting parameters
+## Consolidating parameters
 
+The `.../Settings/DFs_to_consolidate.csv` file contains the definitions to consolidate all extracted parameters in a single CSV dataframe. Fields to be filled are:
+
+- `parameter`:
+- `filenames_to_concatenate`:
+- `hold_filenames`:
+- `hold_instances_number`:
+- `type`:
+- `match_instances_with_other_parameter`:
