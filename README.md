@@ -127,12 +127,12 @@ The search results are described in the file `.../Settings/SE_inputs.csv`. Detai
 
 ---
 
-## Consolidating parameters
+## Consolidating parameters in a single data-frame
 
 The `.../Settings/DFs_to_consolidate.csv` file contains the definitions to consolidate all extracted parameters in a single CSV dataframe name `_consolidated_DF.csv` (saved in `.../dataframes/`). Details on each field are bellow.
 
 ### 1. `parameter`
-- Name of the parameter related with the set `.csv` files that will be concatenated in a column in the consolidated data-frame.
+- Name of the parameter related with the set `.csv` files that will be concatenated in a column in the consolidated data-frame. 
 - **Allowed characters**: `A-Z`, `a-z`, `0-9`, and `_`.
 - **Example**: `size_of_nanoparticles`.
 
@@ -141,8 +141,10 @@ The `.../Settings/DFs_to_consolidate.csv` file contains the definitions to conso
 - **Example of use**: `( nanoparticle_dls_size_01 , nanoparticle_tem_size_02 )`
 
 ### 3. `hold_filenames`
+- **`True`** → Hold the number of instances in the data-frame consindering the last parameter consolidated.  
 
 ### 4. `hold_instances_number`
+- **`True`** → The fi
 
 ### 5. `type`
 
