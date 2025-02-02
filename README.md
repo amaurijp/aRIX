@@ -1,4 +1,6 @@
-# Corpus Processing
+# Automated Reading Interpreting eXporting processes - aRIX
+---
+## Corpus Processing
 
 First, paste the document files (**PDF**, **XML**, or a **single Web of Science CSV report**) into the folder `.../Articles_to_add/`.
 
