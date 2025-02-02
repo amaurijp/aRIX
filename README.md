@@ -113,7 +113,7 @@ After corpus processing, **search routines** can be set to identify and extract 
 ---
 ## Search results
 
-The search results are described in the fields
+The search results are described in the file `.../Settings/SE_inputs.csv`. Details are in the fields:
 - `total_finds`: total number of matches found with the specific set of inputs. In one document (e.g., sentence or article) there can be more than one match.
 - `article_finds`: number of articles in which at least one match was found with the specific set of inputs.
 - `search_status`: indicates if the search scan is `finished` or `ongoing`.
