@@ -1767,9 +1767,14 @@
     "[Zz]irconium(\\s?\\(IV\\))? (di)?oxide": "ZrO2",
     "[Zz]irconium(\\s?\\(IV\\))? (di)?sulfide": "ZrS2"
   },
+  "nanomaterial composition": {
+    "dendrimers": "dendrimer",
+    "Graphene": "graphene"
+  },
   "nanomaterial morphology": {
     "Dot": "dot",
     "Dots": "dot",
+    "DOT": "dot",
     "Nanocapsule": "nanocapsule",
     "Nanocapsules": "nanocapsule",
     "Nanocube": "nanocube",
@@ -1780,6 +1785,7 @@
     "Nanofibers": "nanofiber",
     "Nanoparticle": "nanoparticle",
     "Nanoparticles": "nanoparticle",
+    "NanoParticles": "nanoparticle",
     "Nanoribbon": "nanoribbon",
     "Nanoribbons": "nanoribbon",
     "Nanorod": "nanorod",

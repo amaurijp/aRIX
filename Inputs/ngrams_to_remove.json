@@ -23,11 +23,16 @@
     "stabilizer",
     "substrates"
   ],
+  "composition": [
+    "In"
+  ],
   "extract species": [
     "B) strain",
     "BL strain",
     "Bacterial strain",
-    "E, coli"
+    "E, coli",
+    "H, indica",
+    "W) indica"
   ],
   "processes": [
     "ad",
