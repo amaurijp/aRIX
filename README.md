@@ -1,4 +1,4 @@
-# Automated Reading Interpreting eXporting processes - aRIX
+# Automated Reading, Interpreting, and eXporting processes
 ---
 ## Corpus Processing
 
