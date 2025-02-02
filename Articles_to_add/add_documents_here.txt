@@ -1,0 +1,2 @@
+Add all articles in this folder ".../Articles_to_add"
+File_type accepted: PDF, XML or Web of Science .csv report.
