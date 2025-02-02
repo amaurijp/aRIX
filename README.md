@@ -40,7 +40,7 @@ After corpus processing, **search routines** can be set to identify and extract 
 ### 1. `filename`
 - Name of the `.csv` files to be generated and saved at `.../Outputs/extracted/` (matched sentences) and `.../Outputs/dataframes/` (exported parameters). Each search routine will generate a different `.csv` file for matched sentences and parameters extracted. The `.csv` file in `.../Outputs/extracted/` contains the indexed documents in which relevant information was found after the program scanned the entire corpus. On the other hand, the `.csv` file in `.../Outputs/dataframes/` contains the extracted parameters (categorical or numerical).
 - **Allowed characters**: `A-Z`, `a-z`, `0-9`, and `_`.
-- **Example**: `green_synt_01`.
+- **Examples**: `nanoparticle_dls_size_01` or `nanoparticle_tem_size_02`.
 
 ### 2. `index_list_name`
 - Name of an **already generated `.csv` file** in `.../Outputs/extracted/`.
@@ -129,16 +129,21 @@ The search results are described in the file `.../Settings/SE_inputs.csv`. Detai
 
 ## Consolidating parameters
 
-The `.../Settings/DFs_to_consolidate.csv` file contains the definitions to consolidate all extracted parameters in a single CSV dataframe. Details on each field are bellow.
+The `.../Settings/DFs_to_consolidate.csv` file contains the definitions to consolidate all extracted parameters in a single CSV dataframe name `_consolidated_DF.csv` (saved in `.../dataframes/`). Details on each field are bellow.
 
 ### 1. `parameter`
-- **Description**: Name of the parameter that will.
+- Name of the parameter related with the set `.csv` files that will be concatenated in a column in the consolidated data-frame.
 - **Allowed characters**: `A-Z`, `a-z`, `0-9`, and `_`.
-- **Example**: `microorganism_species`.
+- **Example**: `size_of_nanoparticles`.
 
-- ``:
-- `filenames_to_concatenate`:
-- `hold_filenames`:
-- `hold_instances_number`:
-- `type`:
-- `match_instances_with_other_parameter`:
+### 2. `filenames_to_concatenate`
+- Insert a tuple with the names of the desired .csv files present in `.../Outputs/dataframes/` that contains the parameter defined in field `parameter`.
+- **Example of use**: `( nanoparticle_dls_size_01 , nanoparticle_tem_size_02 )`
+
+### 3. `hold_filenames`
+
+### 4. `hold_instances_number`
+
+### 5. `type`
+
+### 6. `match_instances_with_other_parameter`
