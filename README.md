@@ -1,5 +1,7 @@
 # Automated Reading, Interpreting, and eXporting processes
+
 ---
+
 ## Corpus Processing
 
 First, paste the document files (**PDF**, **XML**, or a **single Web of Science CSV report**) into the folder `.../Articles_to_add/`.
@@ -110,7 +112,9 @@ After corpus processing, **search routines** can be set to identify and extract 
 - The **program uses convolutional neural networks (CNNs)** to classify document sections.
 - **Topic-based searches** rely on **LDA & LSA document-topic matrices**.
 - **LLM prompts** assist in **automatic parameter extraction**.
+
 ---
+
 ## Search results
 
 The search results are described in the file `.../Settings/SE_inputs.csv`. Details are in the fields:
@@ -120,3 +124,8 @@ The search results are described in the file `.../Settings/SE_inputs.csv`. Detai
 - `total_extracted`: total number of parameter extractions performed for this specific set of inputs. In one document (e.g., sentence or article) there can be more than one extraction.
 - `article_extracted`: number of articles in which at least one parameter was extracted with the specific set of inputs.
 - `export_status`: indicates if the extraction process is `finished` or `ongoing`.
+
+---
+
+## Exporting parameters
+
