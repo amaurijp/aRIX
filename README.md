@@ -38,7 +38,7 @@ To perform corpus processing, some basic inputs must be provided in `.../process
 After corpus processing, **search routines** can be set to identify and extract relevant information from the corpus. Each field present in `.../Settings/SE_inputs.csv` is described below:
 
 ### 1. `filename`
-- **Description**: Name of the `.csv` files to be generated and saved at `.../Outputs/extracted/` (matched sentences) and `.../Outputs/dataframes/` (exported parameters). Each search routine will generate a different `.csv` file for matched sentences and parameters extracted. The `.csv` file in `.../Outputs/extracted/` contains the indexed documents in which relevant information was found after the program scanned the entire corpus. On the other hand, the `.csv` file in `.../Outputs/dataframes/` contains the extracted parameters (categorical or numerical).
+- Name of the `.csv` files to be generated and saved at `.../Outputs/extracted/` (matched sentences) and `.../Outputs/dataframes/` (exported parameters). Each search routine will generate a different `.csv` file for matched sentences and parameters extracted. The `.csv` file in `.../Outputs/extracted/` contains the indexed documents in which relevant information was found after the program scanned the entire corpus. On the other hand, the `.csv` file in `.../Outputs/dataframes/` contains the extracted parameters (categorical or numerical).
 - **Allowed characters**: `A-Z`, `a-z`, `0-9`, and `_`.
 - **Example**: `green_synt_01`.
 
