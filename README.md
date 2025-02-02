@@ -119,4 +119,4 @@ The search results are described in the file `.../Settings/SE_inputs.csv`. Detai
 - `search_status`: indicates if the search scan is `finished` or `ongoing`.
 - `total_extracted`: total number of parameter extractions performed for this specific set of inputs. In one document (e.g., sentence or article) there can be more than one extraction.
 - `article_extracted`: number of articles in which at least one parameter was extracted with the specific set of inputs.
-- `export\_status`: indicates if the extraction process is `finished` or `ongoing`.
+- `export_status`: indicates if the extraction process is `finished` or `ongoing`.
