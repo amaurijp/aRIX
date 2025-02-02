@@ -141,11 +141,15 @@ The `.../Settings/DFs_to_consolidate.csv` file contains the definitions to conso
 - **Example of use**: `( nanoparticle_dls_size_01 , nanoparticle_tem_size_02 )`
 
 ### 3. `hold_filenames`
-- **`True`** → Hold the number of instances in the data-frame consindering the last parameter consolidated.  
+- **`True`** → Hold the number of article indexes in the data-frame consindering the last parameter consolidated. For instance, during the consolidation of parameter `size_of_nanoparticles` there is a size value "Y" extracted from "article X" that will be consolidated. However, the previous parameter consolidated in the data-frame was the `nanoparticle_composition`, and no composition was extracted from "article X". In this case, the value "Y" will de discarded during consolidation.
+- **`False`** → Do not hold the number of article indexes.
 
 ### 4. `hold_instances_number`
-- **`True`** → The fi
+- **`True`** → Hold the number of instances in the data-frame consindering the last parameter consolidated. For instance, during the consolidation of parameter `size_of_nanoparticles` there are two size values "Y" and "Z" extracted from "article X" that will be consolidated (i.e., two instances). However, the previous parameter consolidated in the data-frame was the `nanoparticle_composition`, and only one composition ("AB") was extracted from "article X" (one instance). In this case, the values "Y" and "Z" will be discarded during consolidation.
+- - **`False`** → Do not hold the number of instances.
 
 ### 5. `type`
+- Choose between two possible categories: `textual` or `numerical`.
 
 ### 6. `match_instances_with_other_parameter`
+- Introduce a `parameter` name (e.g., `size_of_nanoparticles`) to compare the number of instances. New instances will be added to the data-frame only if the number of instance in the current parameter matches the number of that intruduced. Insert `None` if no instance match is aimed.
