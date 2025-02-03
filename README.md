@@ -127,29 +127,32 @@ The search results are described in the file `.../Settings/SE_inputs.csv`. Detai
 
 ---
 
-## Consolidating parameters in a single data-frame
+## Consolidating Parameters into a Single Data Frame
 
-`.../Settings/DFs_to_consolidate.csv` contains the definitions to consolidate all extracted parameters in a single CSV dataframe name `_consolidated_DF.csv` (saved in `.../dataframes/`). Details on each field are bellow.
+The file `.../Settings/DFs_to_consolidate.csv` contains definitions for consolidating all extracted parameters into a single CSV data frame named `_consolidated_DF.csv` (saved in `.../dataframes/`). Details on each field are provided below.
 
 ### 1. `parameter`
-- Name the parameter that will be concatenated in a column in the consolidated data-frame. 
-- **Allowed characters**: `A-Z`, `a-z`, `0-9`, and `_`.
+- Specifies the parameter to be placed in a column of the consolidated data frame.  
+- **Allowed characters**: `A–Z`, `a–z`, `0–9`, and `_`.  
 - **Example**: `size_of_nanoparticles`.
 
 ### 2. `filenames_to_concatenate`
-- Insert a tuple with the names of the desired .csv files present in `.../Outputs/dataframes/` that contains the parameter defined in field `parameter`.
-- **Example of use**: `( nanoparticle_dls_size_01 , nanoparticle_tem_size_02 )`
+- A tuple listing the names of the `.csv` files (in `.../Outputs/dataframes/`) that contain the parameter defined in `parameter`.  
+- **Example**: `( nanoparticle_dls_size_01 , nanoparticle_tem_size_02 )`
 
 ### 3. `hold_filenames`
-- **`True`** → Hold the number of article indexes in the data-frame consindering the last parameter consolidated. For instance, during the consolidation of parameter `size_of_nanoparticles` there is a size value "Y" extracted from "article X" that will be consolidated. However, the previous parameter consolidated in the data-frame was the `nanoparticle_composition`, and no composition was extracted from "article X". In this case, the value "Y" will de discarded during consolidation.
-- **`False`** → Do not hold the number of article indexes.
+- **`True`** → Retains the number of article indexes in the data frame based on the last consolidated parameter.  
+  **Example**: Suppose you are consolidating the parameter `size_of_nanoparticles` and find a size value "Y" from “article X.” However, the previously consolidated parameter (`nanoparticle_composition`) did **not** extract anything from “article X.” In this case, "Y" is discarded during consolidation.
+- **`False`** → Does not retain the number of article indexes.
 
 ### 4. `hold_instances_number`
-- **`True`** → Hold the number of instances in the data-frame consindering the last parameter consolidated. For instance, during the consolidation of parameter `size_of_nanoparticles` there are two size values "Y" and "Z" extracted from "article X" that will be consolidated (i.e., two instances). However, the previous parameter consolidated in the data-frame was the `nanoparticle_composition`, and only one composition ("AB") was extracted from "article X" (one instance). In this case, the values "Y" and "Z" will be discarded during consolidation.
-- - **`False`** → Do not hold the number of instances.
+- **`True`** → Retains the number of instances in the data frame based on the last consolidated parameter.  
+  **Example**: If two size values, "Y" and "Z," are extracted for `size_of_nanoparticles` from “article X,” but the previously consolidated parameter (`nanoparticle_composition`) returned only one instance from “article X,” then "Y" and "Z" are discarded.
+- **`False`** → Does not retain the number of instances.
 
 ### 5. `type`
-- Choose between two possible categories: `textual` or `numerical`.
+- Choose either **`textual`** or **`numerical`**.
 
 ### 6. `match_instances_with_other_parameter`
-- Introduce a `parameter` name (e.g., `size_of_nanoparticles`) to compare the number of instances. New instances will be added to the data-frame only if the number of instance in the current parameter matches the number of that intruduced. Insert `None` if no instance match is aimed.
+- Provide a previously consolidated `parameter` (e.g., `size_of_nanoparticles`) if you want to match the number of instances. New instances are added only when they match the count of the specified parameter.  
+- Insert `None` if no instance matching is required.
