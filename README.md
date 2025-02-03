@@ -33,7 +33,7 @@ To perform corpus processing, some basic inputs must be provided in `.../process
 
 ---
 
-## After Corpus Processing: Search Routines
+## After Corpus Processing: Search and Extraction Routines
 
 After corpus processing, **search routines** can be set to identify and extract relevant information from the corpus. Each field present in `.../Settings/SE_inputs.csv` is described below:
 
