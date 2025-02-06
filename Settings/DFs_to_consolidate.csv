@@ -1,3 +1,3 @@
 parameter,filenames_to_concatenate,hold_filenames,hold_instances_number,type,match_instances_with_other_parameter
-microbe_species,"( microbes_1, microbes_2 )",FALSE,FALSE,textual,None
+microbe_species,"( microbes_1, microbes_2 )",FALSE,FALSE,categorical,None
 log_killing,( killing_3 ),FALSE,FALSE,numerical,microbe_species
