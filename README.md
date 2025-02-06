@@ -151,7 +151,7 @@ The file `.../Settings/DFs_to_consolidate.csv` contains definitions for consolid
 - **`False`** → Does not retain the number of instances.
 
 ### 5. `type`
-- Choose either **`textual`** or **`numerical`**.
+- Choose either **`categorical`** or **`numerical`**.
 
 ### 6. `match_instances_with_other_parameter`
 - Provide a previously consolidated `parameter` (e.g., `size_of_nanoparticles`) if you want to match the number of instances. New instances are added only when they match the count of the specified parameter.  
