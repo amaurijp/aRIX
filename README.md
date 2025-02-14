@@ -1,6 +1,6 @@
 # Automated Reading, Interpreting, and eXporting processes
 ---
-Details on aRIX program were published in
+Details on aRIX program are published in
 
 > Paula, A. J. An Automated Domain-Independent Text Reading, Interpreting and
 > Extracting Approach for Reviewing the Scientific Literature.
