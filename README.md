@@ -147,19 +147,27 @@ The file `.../Settings/DFs_to_consolidate.csv` contains definitions for consolid
 - A tuple listing the names of the `.csv` files (in `.../Outputs/dataframes/`) that contain the parameter defined in `parameter`.  
 - **Example**: `( nanoparticle_dls_size_01 , nanoparticle_tem_size_02 )`
 
-### 3. `hold_filenames`
+### 3. `ngrams_to_replace`
+- Introduce dictionaries with possible replacement ngrams to those extracted from sentences (see in `.../Inputs/ngrams\_to\_replace.json`).
+- Example: `( elements name symbol, inorganic compounds name symbol, nanomaterial composition )`.
+
+### 4. `hold_filenames`
 - **`True`** → Retains the number of article indexes in the data frame based on the last consolidated parameter.  
   **Example**: Suppose you are consolidating the parameter `size_of_nanoparticles` and find a size value "Y" from “article X.” However, the previously consolidated parameter (`nanoparticle_composition`) did **not** extract anything from “article X.” In this case, "Y" is discarded during consolidation.
 - **`False`** → Does not retain the number of article indexes.
 
-### 4. `hold_instances_number`
+### 5. `hold_instances_number`
 - **`True`** → Retains the number of instances in the data frame based on the last consolidated parameter.  
   **Example**: If two size values, "Y" and "Z," are extracted for `size_of_nanoparticles` from “article X,” but the previously consolidated parameter (`nanoparticle_composition`) returned only one instance from “article X,” then "Y" and "Z" are discarded.
 - **`False`** → Does not retain the number of instances.
 
-### 5. `type`
+### 6. `type`
 - Choose either **`categorical`** or **`numerical`**.
 
-### 6. `match_instances_with_other_parameter`
+### 7. `match_instances_with_other_parameter`
 - Provide a previously consolidated `parameter` (e.g., `size_of_nanoparticles`) if you want to match the number of instances. New instances are added only when they match the count of the specified parameter.  
 - Insert `None` if no instance matching is required.
+
+### 8. `check_parameter_relations`
+- Determine if the preset LLM filters will be used to confirm if the instances in the consolidated dataframe (in `.../Outputs/dataframes/`) were correctly extracted.
+- Insert `True` if the use of LLM filters is aimed. Check file `.../Modules/LLM.py` for preset filters.
