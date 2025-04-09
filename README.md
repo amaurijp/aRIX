@@ -1,6 +1,6 @@
 # Automated Reading, Interpreting, and eXporting processes
 ---
-Details on aRIX program are published in
+Details on the first version of the aRIX program are published in
 
 > Paula, A. J. An Automated Domain-Independent Text Reading, Interpreting and
 > Extracting Approach for Reviewing the Scientific Literature.
@@ -62,29 +62,23 @@ After corpus processing, **search routines** can be set to identify and extract 
 - **Current list of parameters**: [🔗 Available Parameters](https://github.com/amaurijp/arix_v2/blob/main/parameters_to_extract.txt).
 - To add **new parameters**, modify `functions_PARAMETERS.py` and `LLM.py` in `.../Modules/`.
 
-### 5. `extraction_mode`
-- Use `collect_parameters_automatic` to **automatically extract** parameters using a **combination of REGEX patterns and LLM prompts**.
-
-### 6. `scan_sent_by_sent`
+### 5. `scan_sent_by_sent`
 - **`True`** → Scan **at sentence level**.
 - **`False`** → The **full article** will be processed.
 
-### 7. `numbers_extraction_mode`
-- Use `all` to extract **all available numerical parameters**.
-
-### 8. `filter_unique_results`
+### 6. `filter_unique_results`
 - **`True`** → Prevents repeated parameters from being extracted.
 - **Example**: Given the sentence: `The GO concentration was 4.3 mg/mL for sample A, 4.3 mg/mL for sample B, and 6.7 mg/mL for sample C.`
   - If **`True`** → Extracts **4.3, 6.7**.
   - If **`False`** → Extracts **4.3, 4.3, 6.7**.
 
-### 9. `literal_entry`
+### 7. `literal_entry`
 - Insert a **REGEX pattern** to be matched during the corpus scan.
 - **Format**: `s(regex_pattern)e`.
 - **Example**: `s([Mm]aterials?)e` – Matches `Material`, `Materials`, `material`, `materials`.
 - If no **REGEX search** is needed, insert `None`.
 
-### 10. `semantic_entry`
+### 8. `semantic_entry`
 - Choose from **predefined semantic categories**.
 - **Current categories**: [🔗 Available Categories](https://github.com/amaurijp/arix_v2/blob/main/categories_for_semantic_search.txt).
 - If no **semantic search** is needed, insert `None`.
