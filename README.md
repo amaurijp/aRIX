@@ -155,13 +155,22 @@ The file `.../Settings/DFs_to_consolidate.csv` contains definitions for consolid
   **Example**: If two size values, "Y" and "Z," are extracted for `size_of_nanoparticles` from “article X,” but the previously consolidated parameter (`nanoparticle_composition`) returned only one instance from “article X,” then "Y" and "Z" are discarded.
 - **`False`** → Does not retain the number of instances.
 
-### 6. `type`
+### 6. `filter_unique_results`
+- **`True`** → Duplicates values for each document will be removed.
+  **Example**: Values [ 'a1', 'a2', 'a2', 'a3' ] will be converted to [ 'a1', 'a2', 'a3' ].
+- **`False`** → Duplicates will be kept.
+
+### 7. `type`
 - Choose either **`categorical`** or **`numerical`**.
 
-### 7. `match_instances_with_other_parameter`
+### 8. `match_instances_with_other_parameter`
 - Provide a previously consolidated `parameter` (e.g., `size_of_nanoparticles`) if you want to match the number of instances. New instances are added only when they match the count of the specified parameter.  
 - Insert `None` if no instance matching is required.
 
-### 8. `check_parameter_relations`
+### 9. `check_parameter_relations`
 - Determine if the preset LLM filters will be used to confirm if the instances in the consolidated dataframe (in `.../Outputs/dataframes/`) were correctly extracted.
 - Insert `True` if the use of LLM filters is aimed. Check file `.../Modules/LLM.py` for preset filters.
+
+### 10. `parameters_used_to_filter`
+- A tuple listing the consolidated parameters (defined in `parameter` column) that will be used to drop NaN values during filtering.
+- **Example**: `( nanoparticle_composition , size_of_nanoparticles )`
