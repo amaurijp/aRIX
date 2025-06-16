@@ -103,7 +103,6 @@ After corpus processing, **search routines** can be set to identify and extract 
 ---
 
 ## Notes:
-- The field `numbers_extraction_mode` is only considered by the program if a numerical parameter is inserted in the `parameter_to_extract`.
 - For the `semantic_entry`, the terms present in each category [🔗 Available Categories](https://github.com/amaurijp/arix_v2/blob/main/categories_for_semantic_search.txt) are found during corpus processing by calculating cosine similarities of the word-vector embeddings. Categories and terms already set are in  `.../Inputs/ner_rules.json`. The match attempt will be done using function `regex.search( cat_term , input_document )`.
 - If `search_token_by_token` is `True`, each token (token_i) separated by the space character `\s` in the input document will be split and introduced in function `regex.search( text_to_be_found , token_i )`. Argument `False` will make the input document go through the function `regex.search( text_to_be_found , input_document )`. This field is only considered by the program if an entry is provided in the field `semantic_entry`.
 - The field `lower_sentence_for_semantic` is only considered by the program if an entry is provided in the field `semantic_entry`.
