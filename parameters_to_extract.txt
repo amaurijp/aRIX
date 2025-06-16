@@ -25,18 +25,16 @@ from the corpus being scanned (sentences, paragraphs or full texts),
 and "cat_term" represents catergorical terms of interest 
 that are defined in a JSON file in .../Inputs/ner_rules.json. 
 Check available categorical parameters bellow:
-'2D materials name 1gram'
-'2D materials symbol'
-'carbon material name 1gram'
-'chemical element name'
-'chemical element symbol'
-'metallic_nano element name'
-'metallic_nano element symbol'
-'nanomaterial morphology'
-'oxides symbol'
-'quantum dots symbol'
-'species genus all abbr'
-'species genus all full'
-'species toxicological models'
-
-
+'2d_materials_name_1gram'
+'2d_materials_symbol'
+'carbon_material_name_1gram'
+'chemical_element_name'
+'chemical_element_symbol'
+'metallic_nano_element_name'
+'metallic_nano_element_symbol'
+'nanomaterial_morphology'
+'oxides_symbol'
+'quantum_dots_symbol'
+'species_genus_all_abbr'
+'species_genus_all_full'
+'species_toxicological_models'
