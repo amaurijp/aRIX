@@ -266,7 +266,7 @@ class WV(object):
         #criando a matriz sent_token_topic
         if os.path.exists(self.diretorio + f'/Outputs/models/lsa_sents_topic_full_matrix.h5'):
             #contador de arquivos
-            last_batch_processed = load_log_info(log_name = 'last_batch_processed_for_sents', logpath = self.diretorio + '/Outputs/log/lsa_matrices.json')
+            last_batch_processed = load_log_info(log_name = 'last_batch_processed_for_sents', logpath = self.diretorio + '/Outputs/log/matrices_lsa.json')
             last_batch_processed = last_batch_processed if last_batch_processed is not None else 0
             next_batch = int(last_batch_processed) + 1
             print('next TFIDF batch to process: ', next_batch)
@@ -284,7 +284,7 @@ class WV(object):
             h5_sent_topic.create_dataset('data', shape=(self.n_sents, wv_dim), dtype=np.float64)
             h5_sent_topic.close()        
             
-            update_log(log_names = ['last_batch_processed_for_sents'], entries = [0], logpath = self.diretorio + '/Outputs/log/lsa_matrices.json')
+            update_log(log_names = ['last_batch_processed_for_sents'], entries = [0], logpath = self.diretorio + '/Outputs/log/matrices_lsa.json')
             next_batch = 1
             print('next TFIDF batch to process: ', next_batch)
             del h5_sent_topic
@@ -328,7 +328,7 @@ class WV(object):
             sent_topic_m[ initial_sent_index : last_sent_index + 1] = np.dot( m.todense(), svd_wv.values )
             
             #salvando o número total de sentença (documents)
-            update_log(log_names = ['last_batch_processed_for_sents'], entries = [batch], logpath = self.diretorio + '/Outputs/log/lsa_matrices.json')
+            update_log(log_names = ['last_batch_processed_for_sents'], entries = [batch], logpath = self.diretorio + '/Outputs/log/matrices_lsa.json')
 
             h5_sent_topic.close()
             del h5_sent_topic            
@@ -461,7 +461,7 @@ class WV(object):
         proc_documents = get_filenames_from_folder(self.diretorio + '/Outputs/sents_filtered', file_type = 'csv') #lista de arquivos com as textos já extraídos
 
         #contador de arquivos (para parar e resumir o fit)
-        filename = load_log_info(log_name = 'last_filename_processed', logpath = self.diretorio + '/Outputs/log/w2vec_matrices.json')
+        filename = load_log_info(log_name = 'last_filename_processed', logpath = self.diretorio + '/Outputs/log/matrices_w2vec.json')
         filename = filename if filename is not None else proc_documents[0]
         print('w2vec_counter_file_index: ', filename)
         fileindex = proc_documents.index(filename) + 1
@@ -618,7 +618,7 @@ class WV(object):
                     wv_df.to_csv(self.diretorio + f'/Outputs/wv/wv_sents_{self.wv_matrix_name}.csv')
                 
                     #salvando o número do último arquivo processado
-                    update_log(log_names = ['last_filename_processed'], entries = [filename], logpath = self.diretorio + '/Outputs/log/w2vec_matrices.json')
+                    update_log(log_names = ['last_filename_processed'], entries = [filename], logpath = self.diretorio + '/Outputs/log/matrices_w2vec.json')
 
                     del history
                     del wv_df

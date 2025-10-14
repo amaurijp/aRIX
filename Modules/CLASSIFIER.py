@@ -5,7 +5,8 @@ import pandas as pd # type: ignore
 import spacy # type: ignore
 from nltk.corpus import stopwords # type: ignore
 import numpy as np # type: ignore
-from numba import jit # type: ignore
+import numba # type: ignore
+from multiprocessing import get_context
 import h5py # type: ignore
 import os
 import time
@@ -14,7 +15,14 @@ import psutil # type: ignore
 from sklearn.manifold import TSNE # type: ignore
 import matplotlib.pyplot as plt # type: ignore
 import matplotlib.gridspec as gridspec # type: ignore
+from matplotlib.colors import to_hex
+import matplotlib.cm as cm
 import seaborn as sns # type: ignore
+from scipy.spatial.distance import pdist, squareform
+from scipy.cluster.hierarchy import linkage, dendrogram, to_tree
+from scipy.cluster.hierarchy import fcluster
+import networkx as nx # type: ignore
+from sklearn.manifold import MDS
 
 from FUNCTIONS import get_filenames_from_folder
 from FUNCTIONS import save_dic_to_json
@@ -45,7 +53,8 @@ class lda(object):
 
 
 
-    def set_classifier(self, doc_type: str = None, n_topics: int = 100, alpha:float = 0.0, beta:float = 0.0, file_batch_size: int = 0, use_sparse_matrix = False):
+    def set_classifier(self, doc_type: str = None, n_topics: int = 100, alpha:float = 0.0, beta:float = 0.0, 
+                       file_batch_size: int = 0):
 
 
         self.nlp = spacy.load('en_core_web_sm')
@@ -54,18 +63,11 @@ class lda(object):
         self.doc_type = doc_type.lower()
         self.alpha = alpha
         self.beta = beta
-        self.use_sparse_matrix = use_sparse_matrix
-        if self.use_sparse_matrix is True:
-            self.matrix_file_format = '.npz'
-            self.save_matrix = save_sparse_csr_matrix
-            self.load_matrix = load_sparse_csr_matrix
-        else:
-            self.matrix_file_format = '.npy'
-            self.save_matrix = save_dense_matrix
-            self.load_matrix = load_dense_matrix
 
         #definições do modelo
         self.lda_definitions = f'{self.doc_type}_ntopics_{self.n_topics}_a_{self.alpha}_b_{self.beta}'
+        self.path_doc_topic_counts = self.diretorio + f'/Outputs/models/lda_doc_topic_counts_{self.lda_definitions}'
+        self.path_token_topic_counts = self.diretorio + f'/Outputs/models/lda_token_topic_counts_{self.lda_definitions}'
 
         #checando os caminhos das pastas das matrizes
         if not os.path.exists(self.diretorio + f'/Outputs/models/lda_{self.doc_type}_token_topic'):
@@ -95,7 +97,7 @@ class lda(object):
                 print('Adding new LOG for LDA batches...')
                 create_new_log_entry = True
         else:
-            print('Getting LOG for LDA batches...')
+            print('  Getting LOG for LDA batches...')
             self.log_batches = {}
             create_new_log_entry = True
 
@@ -127,7 +129,7 @@ class lda(object):
                 batch_counter_number += 1
                 tagged_batch_counter_number = get_tag_name(batch_counter_number, prefix = '')
                 self.log_batches[self.lda_definitions]['batches'][tagged_batch_counter_number] = {}
-                print('Processing batch: ', tagged_batch_counter_number, '; indexes: ', slice_begin, slice_end, '; files: ', self.articles_filenames[slice_begin], self.articles_filenames[slice_end])
+                print('  Processing batch: ', tagged_batch_counter_number, '; indexes: ', slice_begin, slice_end, '; files: ', self.articles_filenames[slice_begin], self.articles_filenames[slice_end])
                 
                 #contador de sentenças do batch
                 count_sents_batch = 0
@@ -168,7 +170,7 @@ class lda(object):
             path_doc_token_topic = self.diretorio + f'/Outputs/models/lda_{self.doc_type}_token_topic/doc_{self.doc_type}_token_topic_ntopics_{self.n_topics}_a_{self.alpha}_b_{self.beta}_{batch}'
 
             #checando se a matriz token_topic_count já foi criada para esse batch
-            if not os.path.exists(path_doc_token_topic + self.matrix_file_format):
+            if not os.path.exists(path_doc_token_topic + '.npz'):
                 
                 #matriz com atribuição de tópico para cada doc e cada token 
                 n_matrix_lines = self.log_batches[self.lda_definitions]['batches'][batch][f'n_{self.doc_type}']
@@ -234,7 +236,7 @@ class lda(object):
                         row_n += 1
 
                 #salvando a matrix doc_token_topic
-                self.save_matrix(path_doc_token_topic, doc_token_topic_m)
+                save_sparse_csr_matrix(path_doc_token_topic, doc_token_topic_m)
                 print(f'  Criada matrix doc_{self.doc_type}_token_topic com dimensão: ', doc_token_topic_m.shape)
                         
                 #apagando a matrix
@@ -258,16 +260,13 @@ class lda(object):
 
             #carregando a matrix doc_token_topic
             path_doc_token_topic = self.diretorio + f'/Outputs/models/lda_{self.doc_type}_token_topic/doc_{self.doc_type}_token_topic_ntopics_{self.n_topics}_a_{self.alpha}_b_{self.beta}_{batch}'
-            doc_token_topic_m = self.load_matrix(path_doc_token_topic)#, matrix_name = 'doc_token_topic_m')
+            doc_token_topic_m = load_sparse_csr_matrix(path_doc_token_topic)#, matrix_name = 'doc_token_topic_m')
 
             #varrendo os docs
             for i in range(doc_token_topic_m.shape[0]):
                 
                 #contando o número de tópicos para cada document
-                if self.use_sparse_matrix is True:
-                    doc_token_topic_array = np.ravel(doc_token_topic_m[ i , : ])
-                else:
-                    doc_token_topic_array = doc_token_topic_m[ i , : ]
+                doc_token_topic_array = np.asarray(doc_token_topic_m[ i , : ]).ravel()
 
                 doc_topic_array_with_topics = doc_token_topic_array[ np.nonzero( doc_token_topic_array )[0] ]
                 topics_found, counts = np.unique(doc_topic_array_with_topics, return_counts=True)
@@ -278,8 +277,7 @@ class lda(object):
                 #time.sleep(1)
 
         #salvando as matrizes em scipy sparse
-        path_doc_topic_counts = self.diretorio + f'/Outputs/models/lda_{self.doc_type}_topic_counts_ntopics_{self.n_topics}_a_{self.alpha}_b_{self.beta}'
-        self.save_matrix(path_doc_topic_counts, doc_topic_counts_m)
+        save_dense_matrix(self.path_doc_topic_counts, doc_topic_counts_m)
         #print(f'  Criada matrix doc_{self.doc_type}_topic_counts com dimensão: ', doc_topic_counts_m.shape)
         
         del doc_topic_counts_m
@@ -300,16 +298,13 @@ class lda(object):
 
             #carregando a matrix doc_token_topic
             path_doc_token_topic = self.diretorio + f'/Outputs/models/lda_{self.doc_type}_token_topic/doc_{self.doc_type}_token_topic_ntopics_{self.n_topics}_a_{self.alpha}_b_{self.beta}_{batch}'
-            doc_token_topic_m = self.load_matrix(path_doc_token_topic) #, matrix_name = 'doc_token_topic_m')
+            doc_token_topic_m = load_sparse_csr_matrix(path_doc_token_topic) #, matrix_name = 'doc_token_topic_m')
 
             #varrendo os tokens
             for j in range(doc_token_topic_m.shape[1]):
 
                 #contando o número de tópicos para cada token
-                if self.use_sparse_matrix is True:
-                    doc_token_topic_array = np.ravel(doc_token_topic_m[ : , j ])
-                else:
-                    doc_token_topic_array = doc_token_topic_m[ : , j ]
+                doc_token_topic_array = np.asarray(doc_token_topic_m[ : , j ]).ravel()
                 
                 token_topic_array_with_topics = doc_token_topic_array[ np.nonzero( doc_token_topic_array )[0] ]
                 topics_found, counts = np.unique(token_topic_array_with_topics, return_counts=True)
@@ -319,8 +314,7 @@ class lda(object):
                 #time.sleep(1)
 
         #salvando a matrix token_topic_counts concatenada
-        path_token_topic_counts = self.diretorio + f'/Outputs/models/lda_token_topic_counts_{self.lda_definitions}'
-        self.save_matrix(path_token_topic_counts, token_topic_counts_m)
+        save_dense_matrix(self.path_token_topic_counts, token_topic_counts_m)
         #print(f'  Criada matrix token_{self.doc_type}_topic_counts com dimensão: ', token_topic_counts_m.shape)
             
         del token_topic_counts_m
@@ -328,6 +322,19 @@ class lda(object):
 
 
     def start_lda(self, iterations = 10):
+        
+        #os.environ.setdefault("VECLIB_MAXIMUM_THREADS", "1")
+        #os.environ.setdefault("NUMEXPR_NUM_THREADS", "1")
+        #os.environ.setdefault("OMP_NUM_THREADS", "1")
+        #os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
+        #os.environ.setdefault("MKL_NUM_THREADS", "1")
+
+        #creating temp folders
+        #if not os.path.exists(self.path_doc_topic_counts + '_temp'):
+        #    os.makedirs(self.path_doc_topic_counts + '_temp')
+        
+        #if not os.path.exists(self.path_token_topic_counts + '_temp'):
+        #    os.makedirs(self.path_token_topic_counts + '_temp')
 
         self.iter_n = iterations
 
@@ -337,11 +344,11 @@ class lda(object):
         if n is not None: 
             self.iter_n_done = int(n)
             print('\n> Iteração já realizadas: ', self.iter_n_done)
-
-            #caso as matrizes counts tenha sido apagadas
-            if topic_counts_matrices_absent(self.diretorio, self.doc_type, self.n_topics, self.alpha, self.beta, self.matrix_file_format):
+            
+            if self.iter_n_done < self.iter_n:
                 self.count_doc_topics()
-                self.count_token_topics()                
+                self.count_token_topics()
+            else: pass
 
         else:
             #gerando as matrizes iniciais
@@ -354,26 +361,23 @@ class lda(object):
 
 
     def run_lda(self):
-        
-        #carregando as matrizes
-        path_doc_topic_counts = self.diretorio + f'/Outputs/models/lda_{self.doc_type}_topic_counts_ntopics_{self.n_topics}_a_{self.alpha}_b_{self.beta}'
-        path_token_topic_counts = self.diretorio + f'/Outputs/models/lda_token_topic_counts_{self.doc_type}_ntopics_{self.n_topics}_a_{self.alpha}_b_{self.beta}'
-        
-        doc_topic_counts_m = self.load_matrix(path_doc_topic_counts) #, matrix_name='doc_topic_counts_m')
-        token_topic_counts_m = self.load_matrix(path_token_topic_counts) #, matrix_name='token_topic_counts_m')
-                                                
+
+        #loading topic matrices in read only
+        doc_topic_counts_m = load_dense_matrix(self.path_doc_topic_counts)
+        token_topic_counts_m = load_dense_matrix(self.path_token_topic_counts)
+
         erase_temp_matrix = False
         while self.iter_n_done < self.iter_n:
-            erase_temp_matrix = True
+            erase_temp_matrix = True    
 
-            for batch_n in self.log_batches[self.lda_definitions]['batches'].keys():
-                doc_topic_counts_m, token_topic_counts_m = self.gibbs_sampling(batch_n, doc_topic_counts_m, token_topic_counts_m)
-        
-            #salvando as matrizes
-            self.save_matrix(path_doc_topic_counts, doc_topic_counts_m)
-            self.save_matrix(path_token_topic_counts, token_topic_counts_m)            
+            for i in self.log_batches[self.lda_definitions]['batches'].keys():
+                doc_topic_counts_m, token_topic_counts_m = self.gibbs_sampling(i, doc_topic_counts_m, token_topic_counts_m)
 
             self.update_iter_n()
+
+        #salvando
+        save_dense_matrix(self.path_doc_topic_counts, doc_topic_counts_m)
+        save_dense_matrix(self.path_token_topic_counts, token_topic_counts_m)
 
         self.export_token_topics_to_csv()
 
@@ -382,48 +386,26 @@ class lda(object):
 
 
 
-    def plots(self):
+    def plots(self, topn_topics = 10, alpha_combination = 0.5, hplot_figsize = 10, hplot_fontsize = 10, hplot_palette = 'flare'):
 
         print('> Plotting LDA topics...')
         
         #open the list of representative tokens
         tagged_niter = get_tag_name(self.iter_n_done, prefix='')
-        topic_tokens_df = pd.read_csv(self.diretorio + f'/Outputs/models/lda_token_topic_{self.lda_definitions}_niter_{tagged_niter}.csv', index_col = 0)
+        #topic_tokens_df = pd.read_csv(self.diretorio + f'/Outputs/models/lda_token_topic_{self.lda_definitions}_niter_{tagged_niter}.csv', index_col = 0)
         
         #loading the token_topics matrices
-        path_token_topic_counts = self.diretorio + f'/Outputs/models/lda_token_topic_counts_{self.lda_definitions}'
-        token_topic_counts_m = self.load_matrix(path_token_topic_counts)
+        token_topic_counts_m = load_dense_matrix(self.path_token_topic_counts)
         #token_topic_counts_m = token_topic_counts_m[ : 2000]
+
+        #loading the doc_topics matrices
+        doc_topic_counts_m = load_dense_matrix(self.path_doc_topic_counts)
         
-        tsne = TSNE(n_components=2, perplexity=100, random_state=42)
-        tokens_topic_tsne = tsne.fit_transform(token_topic_counts_m)
+        #plot_scatter_token_topics(token_topic_counts_m, self.lda_definitions, tagged_niter, self.diretorio,)
+        plot_hierarchical_topics(token_topic_counts_m, doc_topic_counts_m, tagged_niter, vocab = self.all_tokens_array, topn_topics = topn_topics, 
+                                 alpha_combination = alpha_combination, figure_height = hplot_figsize, fontsize = hplot_fontsize,
+                                 pallete = hplot_palette, lda_definitions = self.lda_definitions, folder = self.diretorio)
 
-        #plotting
-        fig = plt.figure(figsize=(8,8))
-        plot_grid = gridspec.GridSpec(15, 15, figure = fig)
-        plot_grid.update(wspace=0.1, hspace=0.1, left = 0.1, right = 0.9, top = 0.9, bottom = 0.1)
-
-        #coloring topic tokens
-        n_colors = token_topic_counts_m.shape[1]
-        palette = sns.color_palette("Spectral", n_colors)
-
-        ax1 = fig.add_subplot(plot_grid[ : , : ])
-        for i, xy in enumerate(tokens_topic_tsne):
-            ax1.scatter(xy[0], xy[1], s = 30, c=np.array([palette[ np.argmax(token_topic_counts_m[i]) ]]), alpha=0.5)
-
-        ax1.spines['top'].set_linewidth(1)
-        ax1.spines['bottom'].set_linewidth(1)
-        ax1.spines['left'].set_linewidth(1)
-        ax1.spines['right'].set_linewidth(1)
-
-        ax1.xaxis.set_tick_params(labelbottom=False)
-        ax1.yaxis.set_tick_params(labelleft=False)
-        ax1.set_xticks([])
-        ax1.set_yticks([])
-
-        print('Saving LDA topic plot to: ', self.diretorio + f'/Outputs/models/lda_topics_{self.lda_definitions}.png')
-        plt.savefig(self.diretorio + f'/Outputs/models/lda_topics_{self.lda_definitions}.png', dpi=200)
-        #plt.show()'''
 
 
 
@@ -442,8 +424,7 @@ class lda(object):
         df = pd.DataFrame(index = range(1, self.n_topics + 1), columns = ['tokens'], dtype=object)
 
         #carregando a matrix token_topic_counts concatenada
-        path_token_topic_counts = self.diretorio + f'/Outputs/models/lda_token_topic_counts_{self.lda_definitions}'
-        token_topic_counts_m = self.load_matrix(path_token_topic_counts) #, matrix_name='token_topic_counts_m')
+        token_topic_counts_m = load_dense_matrix(self.path_token_topic_counts) #, matrix_name='token_topic_counts_m')
 
         print('> Exportando a relação token_topics em csv...')
         for topic_i in range(self.n_topics):
@@ -472,12 +453,11 @@ class lda(object):
         print('> Final processing')
         print(f'  Concatenando a matriz {self.doc_type}_topics_full (H5 file)...')
         h5_doc_topic = h5py.File(self.diretorio + f'/Outputs/models/lda_{self.lda_definitions}_full_matrix.h5', 'w')
-        h5_doc_topic.create_dataset('data', shape=(self.log_batches[self.lda_definitions][f'total_{self.doc_type}'], self.n_topics), dtype=np.float64)
+        h5_doc_topic.create_dataset('data', shape=(self.log_batches[self.lda_definitions][f'total_{self.doc_type}'], self.n_topics), dtype=int)
         doc_topic_counts_m_full = h5_doc_topic['data']
 
         #carregando as matrizes doc_topic por batch
-        path_doc_topic_counts = self.diretorio + f'/Outputs/models/lda_{self.doc_type}_topic_counts_ntopics_{self.n_topics}_a_{self.alpha}_b_{self.beta}'
-        doc_topic_counts_m = self.load_matrix(path_doc_topic_counts) #, matrix_name='doc_topic_counts_m')
+        doc_topic_counts_m = load_dense_matrix(self.path_doc_topic_counts) #, matrix_name='doc_topic_counts_m')
         doc_topic_counts_m_full[ : ] = doc_topic_counts_m
 
         h5_doc_topic.close()
@@ -491,27 +471,25 @@ class lda(object):
         
         #carregando as matrizes
         path_doc_token_topic = self.diretorio + f'/Outputs/models/lda_{self.doc_type}_token_topic/doc_{self.doc_type}_token_topic_ntopics_{self.n_topics}_a_{self.alpha}_b_{self.beta}_{batch}'
-        doc_token_topic_m = self.load_matrix(path_doc_token_topic) #, matrix_name='doc_token_topic_m')
+        doc_token_topic_m = load_sparse_csr_matrix(path_doc_token_topic)
 
         #start = time.time()
         doc_token_topic_m, doc_topic_counts_m, token_topic_counts_m = operate_matrices(doc_token_topic_m, 
-                                                                                       doc_topic_counts_m, 
-                                                                                       token_topic_counts_m, 
-                                                                                       cum_doc_index = self.log_batches[self.lda_definitions]['batches'][batch]['cum_doc_index'],
-                                                                                       n_topics = self.n_topics, 
-                                                                                       n_tokens = self.n_tokens, 
-                                                                                       alpha = self.alpha, 
-                                                                                       beta = self.beta, 
-                                                                                       use_sparse_matrix = self.use_sparse_matrix)
+                                                                                    doc_topic_counts_m, 
+                                                                                    token_topic_counts_m,
+                                                                                    cum_doc_index = self.log_batches[self.lda_definitions]['batches'][batch]['cum_doc_index'],
+                                                                                    n_topics = self.n_topics, 
+                                                                                    n_tokens = self.n_tokens, 
+                                                                                    alpha = self.alpha, 
+                                                                                    beta = self.beta)
         
         #end = time.time()
         #print('> batch runtime: ', end-start, '\n')
 
         #salvando a matrix doc_token_topic
-        self.save_matrix(path_doc_token_topic, doc_token_topic_m)
+        save_sparse_csr_matrix(path_doc_token_topic, doc_token_topic_m)
 
         #check_memory()
-
         del doc_token_topic_m
 
         return doc_topic_counts_m, token_topic_counts_m
@@ -652,7 +630,7 @@ class lsa(object):
 
     def plots(self, model = 'svd', mode = 'truncated_svd'):
 
-        print('> Plotting LDA topics...')
+        print('> Plotting LSA topics...')
         
         #carregando o df dos IDF para pegar os tokens
         IDF = pd.read_csv(self.diretorio + f'/Outputs/tfidf/idf.csv', index_col = 0)
@@ -743,8 +721,9 @@ def get_initial_random_topics_for_tokens(n_tokens, n_topics):
 
 
 
-@jit(nopython = True)
-def operate_matrices(doc_token_topic_m, doc_topic_counts_m, token_topic_counts_m, cum_doc_index = 0, n_topics = None, n_tokens = None, alpha = None, beta = None, use_sparse_matrix = False):
+@numba.jit(nopython=True, fastmath=True)
+def operate_matrices(doc_token_topic_m, doc_topic_counts_m, token_topic_counts_m,
+                     cum_doc_index = 0, n_topics = None, n_tokens = None, alpha = None, beta = None):    
 
     #varrendo todos os elementos nonzero da matriz doc_token
     for i, j in zip(*np.nonzero(doc_token_topic_m)):
@@ -758,10 +737,8 @@ def operate_matrices(doc_token_topic_m, doc_topic_counts_m, token_topic_counts_m
         #print('  varendo token_topic_counts_m em ', j , sampling_topic_index)
 
         #CDT é o vetor contendo o counts de tópico para o doc "i"
-        if use_sparse_matrix is True:
-            doc_topic_counts_array = np.ravel(doc_topic_counts_m[ i + cum_doc_index , : ])
-        else:
-            doc_topic_counts_array = doc_topic_counts_m[ i + cum_doc_index , : ]
+        row_doc = doc_topic_counts_m[ i + cum_doc_index , : ]
+        doc_topic_counts_array = np.asarray(row_doc).ravel()
         
         cDT = doc_topic_counts_array + alpha
         denominator_pDT = doc_topic_counts_array.sum() + (n_topics * alpha)
@@ -769,14 +746,12 @@ def operate_matrices(doc_token_topic_m, doc_topic_counts_m, token_topic_counts_m
         pDT = cDT / denominator_pDT
 
         #CTT é o vetor contendo o counts de tópico para o token "j"
-        if use_sparse_matrix is True:
-            token_topic_counts_array = np.ravel(token_topic_counts_m[ j , : ])
-            token_topic_counts_sum = np.ravel(token_topic_counts_m.sum(axis=0))
-        else:
-            token_topic_counts_array = token_topic_counts_m[ j , : ]
-            token_topic_counts_sum = token_topic_counts_m.sum(axis=0)
+        row_tok = token_topic_counts_m[ j , : ]
+        token_topic_counts_array = np.asarray(row_tok).ravel()
         
         cTT = token_topic_counts_array + beta
+        sum_tok = token_topic_counts_m.sum(axis=0)
+        token_topic_counts_sum = np.asarray(sum_tok).ravel()
         denominator_pTT = token_topic_counts_sum + (n_tokens * beta)
         #print(cTT.shape, denominator_pTT.shape)
         pTT = cTT / denominator_pTT
@@ -803,20 +778,6 @@ def operate_matrices(doc_token_topic_m, doc_topic_counts_m, token_topic_counts_m
 
 
 
-def topic_counts_matrices_absent(diretorio, doc_type, n_topics, alpha, beta, matrix_file_format):
-
-    cond1 = os.path.exists(diretorio + f'/Outputs/models/lda_{doc_type}_topic_counts_ntopics_{n_topics}_a_{alpha}_b_{beta}' + matrix_file_format)
-    cond2 = os.path.exists(diretorio + f'/Outputs/models/lda_token_topic_counts_{doc_type}_ntopics_{n_topics}_a_{alpha}_b_{beta}' + matrix_file_format)
-
-    if False in (cond1, cond2):
-        return True
-
-    else:
-        print('> matrizes doc_counts e token_counts encontradas.')
-        return False
-
-
-
 def check_memory():
 
     # Get the memory usage in bytes
@@ -827,3 +788,157 @@ def check_memory():
     print(f"Available Memory: {memory_info.available / (1024 ** 3):.2f} GB")
     print(f"Used Memory: {memory_info.used / (1024 ** 3):.2f} GB")
     print(f"Percentage Used: {memory_info.percent}%")
+
+
+
+def plot_scatter_token_topics(token_topic_counts_matrix, lda_definitions, niter, folder):
+        
+        tsne = TSNE(n_components=2, perplexity=100, random_state=42)
+        tokens_topic_tsne = tsne.fit_transform(token_topic_counts_matrix)
+
+        #plotting
+        fig = plt.figure(figsize=(8,8))
+        plot_grid = gridspec.GridSpec(15, 15, figure = fig)
+        plot_grid.update(wspace=0.1, hspace=0.1, left = 0.1, right = 0.9, top = 0.9, bottom = 0.1)
+
+        #coloring topic tokens
+        n_colors = token_topic_counts_matrix.shape[1]
+        palette = sns.color_palette("Spectral", n_colors)
+
+        ax1 = fig.add_subplot(plot_grid[ : , : ])
+        for i, xy in enumerate(tokens_topic_tsne):
+            ax1.scatter(xy[0], xy[1], s = 30, c=np.array([palette[ np.argmax(token_topic_counts_matrix[i]) ]]), alpha=0.5)
+
+        ax1.spines['top'].set_linewidth(1)
+        ax1.spines['bottom'].set_linewidth(1)
+        ax1.spines['left'].set_linewidth(1)
+        ax1.spines['right'].set_linewidth(1)
+
+        ax1.xaxis.set_tick_params(labelbottom=False)
+        ax1.yaxis.set_tick_params(labelleft=False)
+        ax1.set_xticks([])
+        ax1.set_yticks([])
+
+        print('Saving LDA topic plot to: ', folder + f'/Outputs/models/lda_topics_splot_{lda_definitions}_niter_{niter}.png')
+        plt.savefig(folder + f'/Outputs/models/lda_topics_splot_{lda_definitions}.png', dpi=200)
+        #plt.show()'''
+
+
+
+def plot_hierarchical_topics(token_topic_counts_matrix, doc_topic_counts_matrix, niter, vocab = None, topn_topics = 10,
+                             alpha_combination = 0.5, lda_definitions = None, figure_height = 10, pallete = 'viridis',
+                             fontsize = 10, folder = ''):
+
+
+    if pallete.lower() == 'hot':
+        cmap = cm.hot
+    elif pallete.lower() == 'magma':
+        cmap = cm.magma
+    elif pallete.lower() == 'ocean':
+        cmap = cm.ocean
+    elif pallete.lower() == 'plasma':
+        cmap = cm.plasma
+    elif pallete.lower() == 'viridis':
+        cmap = cm.viridis
+    else:
+        print('ERRO! Inserir uma palette válida:')
+        print('Palettes: "hot", "magma", "ocean", "plasma", "viridis"')
+
+    #matrix token_topic    
+    #1. substituindo os zeros na matrix
+    #2. convertendo para matrix token_topic_counts (V, K) > topic_token_counts (K, V)
+    #3. normalizando as linhas da matrix topic_token_counts (K, V)
+    token_topic_counts_matrix = np.maximum(token_topic_counts_matrix, 1e-12)
+    topic_token_counts_matrix = token_topic_counts_matrix.T / token_topic_counts_matrix.T.sum(axis=1, keepdims = True)
+
+    #listando os top n tokens do topico
+    K, V = topic_token_counts_matrix.shape
+    terms = []
+    for k in range(K):
+        idx = np.argsort(topic_token_counts_matrix[k])[::-1][:topn_topics]
+        terms.append([vocab[j] for j in idx])
+    
+    topic_labels = [f"T{1 + idx:02d}: " + ", ".join(ts[:topn_topics])
+                    for idx, ts in enumerate(terms)]
+
+    #encontrando as distâncias entre os vetores da matrix topic_token_counts
+    def jsd(u, v):
+        m = 0.5 * (u + v)
+        kl = lambda a, b: np.sum(a * (np.log(a) - np.log(b)))
+        return np.sqrt(0.5 * kl(u, m) + 0.5 * kl(v, m))
+
+    #calculate dist vector with dimension K*(K-1)/2 based on tokens
+    topic_token_dist =  pdist(topic_token_counts_matrix, metric=lambda u, v: jsd(u, v))
+
+    #matrix doc_topic
+    #1. substituindo os zeros na matrix
+    #2. convertendo para matrix doc_topic_counts (D, K) > topic_doc_counts (K, D)
+    #3. normalizando as linhas da matrix topic_doc_counts (K, D)
+    doc_topic_counts_matrix = np.maximum(doc_topic_counts_matrix, 1e-12)
+    topic_doc_dist = pdist(doc_topic_counts_matrix.T / doc_topic_counts_matrix.T.sum(axis=1, keepdims=True), metric='correlation')
+    
+    # Combine (convex combination of distances)
+    dist_comb = ( (1 - alpha_combination) * topic_doc_dist ) + ( alpha_combination * topic_token_dist )
+
+    #linkage
+    Z = linkage(dist_comb, method='average')
+
+    #color function
+    K = Z.shape[0] + 1
+    # Map internal node id (K..2K-2) -> merge height
+    height_by_id = {K+i: Z[i, 2] for i in range(Z.shape[0])}
+    hmin = min(height_by_id.values())
+    hmax = max(height_by_id.values())
+
+    def link_color_func(node_id: int):
+        if node_id < K:
+            return "#444444"
+        h = height_by_id[node_id]
+        t = (h - hmin) / (hmax - hmin + 1e-12)  # normalize to [0,1]
+        return to_hex(cmap(t))
+
+    # Dendrogram (quick visualization)
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 16))
+    
+    dendrogram(Z, labels=topic_labels, orientation = 'right', link_color_func=link_color_func, ax=ax2)
+    
+    # tick labels (numbers along the axis)
+    ax2.tick_params(axis='y', labelsize=fontsize)
+    ax2.tick_params(axis='x', labelsize=fontsize)
+
+    # axis label text
+    ax2.set_ylabel("Topics", fontsize=fontsize)
+    ax2.set_xlabel("Distance", fontsize=fontsize)
+
+    #bubble plot
+    mds = MDS(n_components=2, dissimilarity="euclidean", random_state=0, n_init=4, max_iter=600)
+    XY = mds.fit_transform(np.sqrt(topic_token_counts_matrix))
+    #XY = mds.fit_transform(squareform(dist_comb))
+
+    #sizes
+    # Topic mass (importance): total tokens across docs (or normalize to %) token_docs
+    mass = doc_topic_counts_matrix.T.sum(axis=1)
+    mass = (mass - mass.min()) / (mass.max() - mass.min())
+    sizes = 200 + 500 * mass                        # bubble areas
+
+    #color
+    #cl = fcluster(Z, t=5, criterion="maxclust")
+
+    ax1.scatter(XY[:,0], XY[:,1], s=sizes, c='gray', cmap="tab10", alpha=0.85, edgecolors="k", linewidths=0.5)
+
+    for (x,y), lab in zip(XY, topic_labels):
+        ax1.text(x, y, lab[ : 3], ha="center", va="center", fontsize=8, color="white", weight="bold",
+                    bbox=dict(boxstyle="round,pad=0.2", fc="black", ec="none", alpha=0.4))
+
+    ax1.xaxis.set_tick_params(labelbottom=False)
+    ax1.yaxis.set_tick_params(labelleft=False)
+    ax1.set_xticks([])
+    ax1.set_yticks([])
+    ax1.spines['top'].set_visible(False)
+    ax1.spines['bottom'].set_visible(False)
+    ax1.spines['left'].set_linewidth(False)
+    ax1.spines['right'].set_visible(False)
+
+    fig.tight_layout()
+    plt.savefig(folder + f'/Outputs/models/lda_topics_hplot_{lda_definitions}_niter_{niter}.png', dpi=200)
+    #plt.show()        

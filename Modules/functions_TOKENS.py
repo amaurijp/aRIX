@@ -70,7 +70,7 @@ def get_tokens_indexes(tokens_list, all_token_array = None):
 
 
 #------------------------------
-def get_tokens_from_sent(sent, tokens_list_to_filter = None, stopwords_list_to_remove = None, get_number_tokens = False, spacy_tokenizer = None, process_with_spacy = False, filter_unique = False):
+def get_tokens_from_sent(sent, tokens_list_to_filter = None, stopwords_list_to_remove = None, get_number_initiated_tokens = True, spacy_tokenizer = None, process_with_spacy = False, filter_unique = False):
     
     import time
     
@@ -80,7 +80,7 @@ def get_tokens_from_sent(sent, tokens_list_to_filter = None, stopwords_list_to_r
     else:
         def regTokenize(text):
             import re
-            WORD = re.compile(r'\w+')
+            WORD = re.compile(r'\b[\w@#/_%°;ΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩαβγδεζηθικλμνξοπρςστυφχψω\=\:\<\>\+\-\.\&\*\$\|\\\(\)\{\}\[\]]+\b')
             words = WORD.findall(text)
             return words
         
@@ -88,7 +88,7 @@ def get_tokens_from_sent(sent, tokens_list_to_filter = None, stopwords_list_to_r
         sent_tokens = [ token for token in regTokenize(sent) ]
     
     #qunado não se quer pegar os tokens numéricos
-    if get_number_tokens is False:
+    if get_number_initiated_tokens is False:
         sent_tokens = [ token for token in sent_tokens if token[0] in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' + 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.lower() ]
 
     #print('TOKENS SENT: ', sent_tokens)

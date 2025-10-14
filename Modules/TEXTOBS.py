@@ -566,9 +566,8 @@ class text_objects(object):
         
         print('\n( Function: get_ngrams_appereance )')
 
-        #checando a existência das pastas
-        if not os.path.exists(self.diretorio + '/Outputs/ngrams/appearence'):
-            os.makedirs(self.diretorio + '/Outputs/ngrams/appearence')
+        if not os.path.exists(self.diretorio + '/Outputs/ngrams'):
+            os.makedirs(self.diretorio + '/Outputs/ngrams')
 
         #carregando a lista de arquivos processados
         filtered_sents_filenames = get_filenames_from_folder(self.diretorio + '/Outputs/sents_filtered', file_type = 'csv')
@@ -579,8 +578,8 @@ class text_objects(object):
         print('Last file processed: ', last_file_processed)
 
         #checando se os arquivos já tiveram os tokens contados
-        if os.path.exists(self.diretorio + '/Outputs/ngrams/appearence/tokens_appereance_counts.csv'):
-            token_dic = from_token_indexed_csv_to_dict(self.diretorio + '/Outputs/ngrams/appearence/tokens_appereance_counts.csv')
+        if os.path.exists(self.diretorio + '/Outputs/ngrams/tokens_appereance_counts.csv'):
+            token_dic = from_token_indexed_csv_to_dict(self.diretorio + '/Outputs/ngrams/tokens_appereance_counts.csv')
         else:
             #definindo os dicionários para contar os findings de tokens
             token_dic = {}
@@ -591,16 +590,16 @@ class text_objects(object):
             print('> Abortando função: text_objects.get_Ngrams_appereance')
             return
         
-        print('Finding 2grams CSV...')
+        #print('Finding 2grams CSV...')
         #checando se há o DF de 2grams
-        if os.path.exists(self.diretorio + '/Outputs/ngrams/appearence/2grams_appereance_counts.csv'):
-            #carregando o DF com os 2grams
-            n2grams_dic = from_token_indexed_csv_to_dict(self.diretorio + '/Outputs/ngrams/appearence/2grams_appereance_counts.csv')
-            print('DataFrame de 2grams encontrado...')            
-        else:
-            #criando um dicionário de 2grams
-            n2grams_dic = {}       
-            print('Criando DF de 2grams...')
+        #if os.path.exists(self.diretorio + '/Outputs/ngrams/2grams_appereance_counts.csv'):
+        #    #carregando o DF com os 2grams
+        #    n2grams_dic = from_token_indexed_csv_to_dict(self.diretorio + '/Outputs/ngrams/2grams_appereance_counts.csv')
+        #    print('DataFrame de 2grams encontrado...')            
+        #else:
+        #    #criando um dicionário de 2grams
+        #    n2grams_dic = {}       
+        #    print('Criando DF de 2grams...')
         
         #varrendo os documentos .csv com as sentenças
         counter_to_save = 0
@@ -620,7 +619,7 @@ class text_objects(object):
 
                 #lista para coletar os tokens presentes na sentença
                 tokens_got_in_sent = []
-                n2grams_got_in_sent = []
+                #n2grams_got_in_sent = []
                 
                 sent = sentDF.loc[index, 'Sentence']
                 
@@ -657,6 +656,7 @@ class text_objects(object):
                         tokens_got_in_sent.append(token)
                         tokens_got_in_article.append(token)
 
+                '''
                 #varrendo os tokens para 2grams
                 for token_index in range(len(sent_tokens)):
                     try:
@@ -696,27 +696,28 @@ class text_objects(object):
                         
                     except IndexError:
                         continue   
-
+                        '''
+                
                 #limpando os check de token e Ngrams nas sentenças
                 for token in tokens_got_in_sent:
                     token_dic[token]['check_sent_pres'] = False
                 
-                for bigram in n2grams_got_in_sent:
-                    n2grams_dic[bigram]['check_sent_pres'] = False
+                #for bigram in n2grams_got_in_sent:
+                #    n2grams_dic[bigram]['check_sent_pres'] = False
 
                 del sent
                 del sent_tokens
                 del tokens_got_in_sent
-                del n2grams_got_in_sent
+                #del n2grams_got_in_sent
 
             #limpando os check de token e Ngrams nos artigos
             for token in tokens_got_in_article:
                 token_dic[token]['check_article_pres'] = False
-            for bigram in n2grams_got_in_article:
-                n2grams_dic[bigram]['check_article_pres'] = False
+            #for bigram in n2grams_got_in_article:
+            #    n2grams_dic[bigram]['check_article_pres'] = False
                 
             print('Tokens counter: ', len(token_dic.keys()))
-            print('2gram counter: ', len(n2grams_dic.keys()))
+            #print('2gram counter: ', len(n2grams_dic.keys()))
             counter_to_save += 1
             
             #salvando a cada 100 artigos ou quando for o último
@@ -728,12 +729,12 @@ class text_objects(object):
                 token_DF = pd.DataFrame.from_dict(token_dic, orient='index')
                 token_DF.index.name = 'index'
                 token_DF.sort_values(by=['total'], ascending=False, inplace=True)
-                token_DF.to_csv(self.diretorio + '/Outputs/ngrams/appearence/tokens_appereance_counts.csv')
+                token_DF.to_csv(self.diretorio + '/Outputs/ngrams/tokens_appereance_counts.csv')
                 
-                n2gram_DF = pd.DataFrame.from_dict(n2grams_dic, orient='index')
-                n2gram_DF.index.name = 'index'
-                n2gram_DF.sort_values(by=['total'], ascending=False, inplace=True)
-                n2gram_DF.to_csv(self.diretorio + '/Outputs/ngrams/appearence/2grams_appereance_counts.csv')
+                #n2gram_DF = pd.DataFrame.from_dict(n2grams_dic, orient='index')
+                #n2gram_DF.index.name = 'index'
+                #n2gram_DF.sort_values(by=['total'], ascending=False, inplace=True)
+                #n2gram_DF.to_csv(self.diretorio + '/Outputs/ngrams/2grams_appereance_counts.csv')
                 #print(n2gram_DF)
                 
                 #salvando o número do último arquivo processado
@@ -744,33 +745,30 @@ class text_objects(object):
             del sentDF
             
         del token_dic
-        del n2grams_dic
+        #del n2grams_dic
         del token_DF
-        del n2gram_DF
+        #del n2gram_DF
 
 
 
+    #not being used
     def filter_2grams(self, n2gram_mim_delta_val = 0.5):
         
         print('\n( Function: filter_2grams )')
 
         print('Abrindo a DF com a contagem de tokens...')
         #abrindo a contagem de tokens e a quantidade total de documentos
-        token_DF = pd.read_csv(self.diretorio + '/Outputs/ngrams/appearence/tokens_appereance_counts.csv', index_col=0)
+        token_DF = pd.read_csv(self.diretorio + '/Outputs/ngrams/tokens_appereance_counts.csv', index_col=0)
         #token_DF.dropna(inplace=True)
 
         print('Abrindo a DF com a contagem de bigrams...')
-        n2grams_DF = pd.read_csv(self.diretorio + '/Outputs/ngrams/appearence/2grams_appereance_counts.csv', index_col=0)
+        n2grams_DF = pd.read_csv(self.diretorio + '/Outputs/ngrams/2grams_appereance_counts.csv', index_col=0)
         #n2grams_DF.dropna(inplace=True)
 
         n2gram_scores_dic = {}
         print('Existem ', n2grams_DF.shape[0], ' bigrams para processar.')
-
-        #checando a existência das pastas
-        if not os.path.exists(self.diretorio + '/Outputs/ngrams/filtered_scores'):
-            os.makedirs(self.diretorio + '/Outputs/ngrams/filtered_scores')
         
-        if not os.path.exists(self.diretorio + '/Outputs/ngrams/filtered_scores/n2grams_scores.csv'):
+        if not os.path.exists(self.diretorio + '/Outputs/ngrams/n2grams_scores.csv'):
             print('Calculando os scores dos bigrams...')
             counter = 1
             for bigram in n2grams_DF.index:
@@ -810,13 +808,13 @@ class text_objects(object):
                     continue
 
             
-            print('Salvando ~/Outputs/ngrams/filtered_scores/n2grams_scores.csv')
+            print('Salvando ~/Outputs/ngrams/n2grams_scores.csv')
             n2gram_scores_DF = pd.DataFrame.from_dict(n2gram_scores_dic, orient='index')
             #n2gram_scores_series.sort_values(ascending=False, inplace=True)                
-            n2gram_scores_DF.to_csv(self.diretorio + '/Outputs/ngrams/filtered_scores/n2grams_scores.csv')
+            n2gram_scores_DF.to_csv(self.diretorio + '/Outputs/ngrams/n2grams_scores.csv')
     
         else:
-            n2gram_scores_DF = pd.read_csv(self.diretorio + '/Outputs/ngrams/filtered_scores/n2grams_scores.csv', index_col = 0)
+            n2gram_scores_DF = pd.read_csv(self.diretorio + '/Outputs/ngrams/n2grams_scores.csv', index_col = 0)
 
 
         print('Filtering n2gram DF...')
@@ -824,8 +822,8 @@ class text_objects(object):
         n2grams_concat = pd.concat([n2grams_DF, n2gram_scores_DF], axis = 1)
         n2grams_concat.dropna(inplace = True)
         n2grams_concat.index.name = 'index'
-        n2grams_concat.to_csv(self.diretorio + '/Outputs/ngrams/filtered_scores/n2grams_filtered.csv')
-        print('Saving to ~/Outputs/ngrams/filtered_scores/n2grams_filtered.csv')
+        n2grams_concat.to_csv(self.diretorio + '/Outputs/ngrams/n2grams_filtered.csv')
+        print('Saving to ~/Outputs/ngrams/n2grams_filtered.csv')
             
         del token_DF
         del n2grams_DF
@@ -863,7 +861,7 @@ class text_objects(object):
         n_articles = len( get_filenames_from_folder(self.diretorio + '/Outputs/sents_filtered', file_type = 'csv') )
                 
         #abrindo a contagem de ngrams e a quantidade total de documentos
-        n1gram_count_appereance = pd.read_csv(self.diretorio + '/Outputs/ngrams/appearence/tokens_appereance_counts.csv')
+        n1gram_count_appereance = pd.read_csv(self.diretorio + '/Outputs/ngrams/tokens_appereance_counts.csv')
         n1gram_count_appereance.dropna(inplace=True)
         n1gram_count_appereance.set_index('index', inplace=True)
         print('Shape n1gram DF: ', n1gram_count_appereance.shape)

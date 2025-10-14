@@ -48,7 +48,7 @@ def process(search_input_index, revise_search_cond, diretorio):
         se.search_with_combined_models()
 
 
-    if SE_inputs[search_input_index]['export_status'].lower() != 'finished':
+    if SE_inputs[search_input_index]['extract_status'].lower() != 'finished':
         
         print('\n> Go to extract engine...')
         DF = DataFrames(diretorio = diretorio)

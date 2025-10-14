@@ -517,7 +517,7 @@ def get_physical_units():
     dic['force'] = ['dyn', 'kdyn', 'Kdyn', 'Mdyn', 'dyne', 'kdyne', 'Kdyne', 'Mdyne', 'nN', 'uN', 'mN', 'cN', 'dN', 'N', 'kN']
     dic['log10'] = ['log', 'logs']
     dic['molarity'] = ['umol', 'µmol', 'mmol', 'cmol', 'mol']
-    dic['potency'] = ['watts', 'W']
+    dic['power'] = ['miliwatts', 'watts', 'kilowatts', 'mW', 'W', 'kW','KW']
     dic['percentage'] = ['%']
     dic['weight_percentage'] = ['wtperc', 'wtvperc' , 'volperc']
     dic['pressure'] = ['Pa', 'kPa', 'KPa', 'MPa', 'Bar', 'bar', 'kBar', 'kbar', 'KBar', 'Kbar', 'MBar', 'Mbar']
@@ -561,7 +561,7 @@ def get_physical_units_SI_normalized():
     dic['force'] = 'N'
     dic['log10'] = 'log'
     dic['molarity'] = 'mol'
-    dic['potency'] = 'W'
+    dic['power'] = 'W'
     dic['percentage'] = '%'
     dic['weight_percentage'] = 'wtperc'
     dic['weightvol_percentage'] = 'wtvperc'
@@ -591,7 +591,7 @@ def get_physical_units_SI_unnormalized():
     dic['force'] = ['N']
     dic['log10'] = ['log', 'logs']
     dic['molarity'] = ['mol']
-    dic['potency'] = ['W', 'Watts', 'watts']
+    dic['power'] = ['W', 'Watts', 'watts']
     dic['percentage'] = ['%']
     dic['weight_percentage'] = ['wtperc']
     dic['weightvol_percentage'] = ['wtvperc']
@@ -869,11 +869,12 @@ def list_numerical_parameter():
                  'nanomaterial_surface_area',
                  'nanomaterial_zeta_potential',
                  'percentage',
+                 'sofc_powerdensity',
                  'surface_tension',
                  'temperature',
                  'time',
                  'toxic_ec50',
-                 'toxicity_lc50',
+                 'toxic_lc50',
                  'toxic_ld50',
                  'toxic_ic50',
                  'viscosity_cp',
@@ -905,6 +906,7 @@ def list_textual_parameter_for_llm_search():
                       'metallic_materials',
                       'oxides_materials',
                       'qdots_materials',
+                      'sofc_anode_composition',
 
                       'toxicity_a_thaliana_all',
                       'toxicity_a_thaliana_bioaccumulation',
@@ -956,7 +958,7 @@ def list_textual_parameter_for_llm_search():
 
 
 #------------------------------
-def list_textual_parameter_for_llm_check():
+def list_parameter_for_llm_check():
     
     parameter_list = ['biofilm_killing_perc',
                       'microbe_killing_log',
@@ -1008,7 +1010,21 @@ def regex_patt_from_parameter(parameter):
     all_PU_unit = [unit for cat in list(PU_unit_dic.values()) for unit in cat]
     
     #determinando as unidades físicas de interesse
-    if parameter.lower() == 'concentration_mass_mass':
+    if parameter.lower() == 'biofilms_killing_perc':
+        
+        pattern_dic['first_parameter'] = 'percentage'
+        pattern_dic['second_parameter'] = None
+
+        #lista de unidades a serem encontradas        
+        PU_units_to_find = PU_unit_dic[pattern_dic['first_parameter']]
+
+        #determinando o número mínimo e máximo de caracteres numéricos        
+        n_min_len , n_max_len = 1 , 5
+        ndec_min_len, ndec_max_len = 0 , 3
+        found_parameter = True
+        parameter_type = 'single'
+    
+    elif parameter.lower() == 'concentration_mass_mass':
         
         pattern_dic['first_parameter'] = 'weight'
         pattern_dic['second_parameter'] = 'weight'
@@ -1106,21 +1122,7 @@ def regex_patt_from_parameter(parameter):
         found_parameter = True
         parameter_type = 'combined'
 
-    elif parameter.lower() == 'microbe_percentage_killing':
-        
-        pattern_dic['first_parameter'] = 'percentage'
-        pattern_dic['second_parameter'] = None
-
-        #lista de unidades a serem encontradas        
-        PU_units_to_find = PU_unit_dic[pattern_dic['first_parameter']]
-
-        #determinando o número mínimo e máximo de caracteres numéricos        
-        n_min_len , n_max_len = 1 , 5
-        ndec_min_len, ndec_max_len = 0 , 3
-        found_parameter = True
-        parameter_type = 'single'
-
-    elif parameter.lower() == 'biofilms_killing_perc':
+    elif parameter.lower() == 'microbe_killing_perc':
         
         pattern_dic['first_parameter'] = 'percentage'
         pattern_dic['second_parameter'] = None
@@ -1148,7 +1150,7 @@ def regex_patt_from_parameter(parameter):
         found_parameter = True
         parameter_type = 'combined'
 
-    elif parameter.lower() == 'size':
+    elif parameter.lower() == 'nanomaterial_size':
         
         pattern_dic['first_parameter'] = 'distance'
         pattern_dic['second_parameter'] = None
@@ -1162,7 +1164,7 @@ def regex_patt_from_parameter(parameter):
         found_parameter = True
         parameter_type = 'single'
 
-    elif parameter.lower() == 'surface_area':
+    elif parameter.lower() == 'nanomaterial_surface_area':
 
         pattern_dic['first_parameter'] = 'areametric'
         pattern_dic['second_parameter'] = 'weight'        
@@ -1176,7 +1178,7 @@ def regex_patt_from_parameter(parameter):
         found_parameter = True
         parameter_type = 'combined'
 
-    elif parameter.lower() == 'zeta_potential':
+    elif parameter.lower() == 'nanomaterial_zeta_potential':
         
         pattern_dic['first_parameter'] = 'electricpotential'
         pattern_dic['second_parameter'] = None
@@ -1203,6 +1205,20 @@ def regex_patt_from_parameter(parameter):
         ndec_min_len, ndec_max_len = 0 , 3
         found_parameter = True
         parameter_type = 'single'
+
+    elif parameter.lower() == 'sofc_powerdensity':
+        
+        pattern_dic['first_parameter'] = 'power'
+        pattern_dic['second_parameter'] = 'areametric'
+
+        #lista de unidades a serem encontradas        
+        PU_units_to_find = get_physical_units_combined(first_parameter = pattern_dic['first_parameter'], second_parameter = pattern_dic['second_parameter'], get_inverse = True)
+
+        #determinando o número mínimo e máximo de caracteres numéricos        
+        n_min_len , n_max_len = 1 , 5
+        ndec_min_len, ndec_max_len = 0 , 3
+        found_parameter = True
+        parameter_type = 'combined'
 
     elif parameter.lower() == 'surface_tension':
 
@@ -1260,7 +1276,7 @@ def regex_patt_from_parameter(parameter):
         found_parameter = True
         parameter_type = 'combined'
 
-    elif parameter.lower() == 'toxicity_lc50':
+    elif parameter.lower() == 'toxic_lc50':
         
         pattern_dic['first_parameter'] = 'weight'
         pattern_dic['second_parameter'] = 'volume'

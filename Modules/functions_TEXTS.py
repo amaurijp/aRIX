@@ -295,30 +295,34 @@ def filter_chemphys_entities(string_text, filename = '', filter_log_dic = None, 
 
     #unidades físicas que precisarão ser substituidas no texto
     pattern_sub_list = [
-                        [r'(?<=[\s\(\[])>(?=[0-9])', '> ', 'filtro de >5 -> > 5', False, False ],
-                        [r'(?<=[\s\(\[0-9])(weight|w|wt|W)\s*/\s*(weight|w|wt|W)(?=[\s\)\]\,\:\.;])', 'wtperc', 'filtro de % (w / w)', False, False ],
-                        [r'(?<=[\s\(\[0-9])(weight|w|wt|W)\s*/\s*(vol|v|V)(?=[\s\)\]\,\:\.;])', 'wtvperc', 'filtro de % (w / v)', False, False ],
-                        [r'(?<=[\s\(\[0-9])(vol|v|V)\s*/\s*(vol|v|V)(?=[\s\)\]\,\:\.;])', 'volperc', 'filtro de % (v / v)', False, False ],
-                        [r'(?<=[\s\(\[0-9])(ppm)(?=[\s\)\]\,\:\.;])', 'mg l-1', 'filtro de ppm -> mg l-1', False, False ],
-                        [r'(?<=[\s\(\[0-9])(mu[;\s]+g)(?=[\s\)\]\,\:\.;])', 'ug', 'filtro de mu g -> ug', False, False ],
-                        [r'(?<=[\s\(\[0-9])(mu[;\s]+m)(?=[\s\)\]\,\:\.;])', 'um', 'filtro de mu m -> um', False, False ],
-                        [r'(?<=[\s\(\[0-9])(cc)(?=[\s\)\]\,\:\.;])', 'cm3', 'cc -> cm3', False, False ],
-                        [r'(?<=[\s\(\[0-9])(log\(?10\)?([Cc][Ff][Uu]/m[lL]|[Cc][Ff][Uu])?)(?=[\s\)\]\,\:\.;])', 'log', 'filtro de log(10) -> log', False, False ]
+                        [r'(?<=[\s\(\[])([<>])(?=[0-9])', r'\1 ', 'filtro de >5 -> > 5', False, False ],
+                        [r'(?<=[\s\(\[0-9])(?:weight|w|wt|W)\s*/\s*(?:weight|w|wt|W)\b', 'wtperc', 'filtro de % (w / w)', False, False ],
+                        [r'(?<=[\s\(\[0-9])(?:weight|w|wt|W)\s*/\s*(?:vol|v|V)\b', 'wtvperc', 'filtro de % (w / v)', False, False ],
+                        [r'(?<=[\s\(\[0-9])(?:vol|v|V)\s*/\s*(?:vol|v|V)\b', 'volperc', 'filtro de % (v / v)', False, False ],
+                        [r'(?<=[\s\(\[0-9])(?:ppm)\b', 'mg l-1', 'filtro de ppm -> mg l-1', False, False ],
+                        [r'(?<=[\s\(\[0-9])(?:mu[;\s]+g)\b', 'ug', 'filtro de mu g -> ug', False, False ],
+                        [r'(?<=[\s\(\[0-9])(?:mu[;\s]+m)\b', 'um', 'filtro de mu m -> um', False, False ],
+                        [r'(?<=[\s\(\[0-9])(?:cc)\b', 'cm3', 'cc -> cm3', False, False ],
+                        [r'(?<=[\s\(\[0-9])(?:degrees\s?C)\b', '°C', 'degrees C -> °C', True, True ],
+                        [r'(?<=[\s\(\[0-9])(?:log\(?10\)?(?:[Cc][Ff][Uu]/m[lL]|[Cc][Ff][Uu])?)\b', 'log', 'filtro de log(10) -> log', False, False ]
                         ]
     
     string_text, filter_log_dic = filter_and_check(pattern_sub_list, string_text, filter_log_dic, filename)
 
+
     #molaridade
     for unit_prefix in ['', 'u','m']:
-        pattern_sub_list = [[r'(?<=[0-9]\s?){}M(?=[\s\)\]\,\:\.;])'.format(unit_prefix), 
+        pattern_sub_list = [[r'(?<=[0-9]\s?){}M\b'.format(unit_prefix), 
                              ' {unit_prefix}mol L-1'.format(unit_prefix = unit_prefix),
                              'M -> mol L-1', 
                              False, False ]]
         string_text, filter_log_dic = filter_and_check(pattern_sub_list, string_text, filter_log_dic, filename)
 
+
     #coletando as PU combinadas de interesse
     all_PU_combined_dic = []
-    for param1, param2 in (("weight", "volume"), ("molarity", "volume"), ("areametric", "weight")):
+    #opções: ("weight", "volume"), ("molarity", "volume"), ("areametric", "weight"), ("power", "areametric")
+    for param1, param2 in [("power", "areametric")]:
         PU_combined_dic = get_physical_units_combined(first_parameter = param1, second_parameter = param2, get_inverse = False) 
         all_PU_combined_dic.extend( PU_combined_dic['separated'] )
 
@@ -334,57 +338,59 @@ def filter_chemphys_entities(string_text, filename = '', filter_log_dic = None, 
                 return unit
 
         #filtro para padronizar unidades físicas com denominador EX: N/m -> N m-1
-        pattern_sub_list = [[r'(?<=[\s\(\[0-9]){baseunit1}\s*\(?{exp1}\)?\s*/\s*{baseunit2}\s*\(?{exp2}\)?(?=[\s\)\]\,\:\.;])'.format(baseunit1 = baseunit1,
+        pattern_sub_list = [[r'(?<=[\s\(\[0-9]){baseunit1}\s*\(?{exp1}\)?\s*/\s*{baseunit2}\s*\(?{exp2}\)?(?!\w)'.format(baseunit1 = baseunit1,
                                                                                                                                       exp1 = check_rem_exp(exponent1),
                                                                                                                                       baseunit2 = baseunit2,
                                                                                                                                       exp2 = check_rem_exp(exponent2)), 
                              f'{u1} {baseunit2}-{exponent2}', 
                              f'{u1}/{u2} -> {u1} {baseunit2}-{exponent2}', 
-                             False, False ]]
+                             True, True ]]
         string_text, filter_log_dic = filter_and_check(pattern_sub_list, string_text, filter_log_dic, filename)
     
         #filtro para padronizar unidades físicas com denominador EX: m(2).g(-1) ou m2g-1 -> m2 g-1
-        pattern_sub_list = [[r'(?<=[\s\(\[0-9]){baseunit1}\s*\(?{exp1}\)?[\s\.;]*{baseunit2}\s*\(?-{exponent2}\)?(?=[\s\)\]\,\:\.;])'.format(baseunit1 = baseunit1,
+        pattern_sub_list = [[r'(?<=[\s\(\[0-9]){baseunit1}\s*\(?{exp1}\)?[\s\.;]*{baseunit2}\s*\(?-{exponent2}\)?(?!\w)'.format(baseunit1 = baseunit1,
                                                                                                                                              exp1 = check_rem_exp(exponent1),
                                                                                                                                              baseunit2 = baseunit2,
                                                                                                                                              exponent2 = exponent2), 
                              f'{u1} {baseunit2}-{exponent2}', 
                              f'{u1}[.;/\s]{u2} -> {u1} {baseunit2}-{exponent2}', 
-                             False, False ]]
+                             True, True ]]
         string_text, filter_log_dic = filter_and_check(pattern_sub_list, string_text, filter_log_dic, filename)
 
 
     PU_units = get_physical_units()
     #varrer sobre as mais usadas
-    for cat in ('areametric', 'distance', 'energy', 'electricpotential', 'log10', 'molarity', 'percentage', 
-                'pressure', 'temperature', 'volume', 'weight'):
+    #opções: ['areametric', 'distance', 'energy', 'electricpotential', 'log10', 'molarity', 'percentage', 'pressure', 'temperature', 'volume', 'weight']
+    for cat in ['areametric', 'power']:
         
         for unit in PU_units[cat]:
             
             #separar números de unidades físicas. EX: 2% -> 2 %         
-            pattern_sub_list = [[r'(?<=[0-9]){unit}(?=[\s\)\]\,\:\.;])'.format(unit = unit), 
+            pattern_sub_list = [[r'(?<=[0-9]){unit}\b'.format(unit = unit), 
                                 f' {unit}', 
                                 f'separando 0{unit} -> 0 {unit}', 
-                                False, False ]]
+                                True, True ]]
             string_text, filter_log_dic = filter_and_check(pattern_sub_list, string_text, filter_log_dic, filename)
 
             #separar intervalos de números ex: 10-20 mg -> 10 - 20 mg
-            pattern_sub_list = [[r'(?<=[0-9]\.?[0-9]*\s*({unit})?)\-(?=[0-9]\.?[0-9]*\s*{unit}[\s\)\]\,\:\.;])'.format(unit = unit), 
+            pattern_sub_list = [[r'(?<=[0-9]\.?[0-9]*\s*({unit})?)\-(?=[0-9]\.?[0-9]*\s*{unit}\b)'.format(unit = unit), 
                                 f' - ', 
                                 f'separando 10-20 {unit} -> 10 - 20 {unit}', 
                                 True, True ]]
             string_text, filter_log_dic = filter_and_check(pattern_sub_list, string_text, filter_log_dic, filename)
 
+
     #filtrando nomenclatura química
     #abrindo o dic ~/Inputs/ngrams_to_replace
     ngrams_to_replace_dic = load_dic_from_json(diretorio + '/Inputs/ngrams_to_replace.json')
-    for cat in ['inorganic compounds name symbol']:
+    for cat in ['inorganic compounds name symbol regex', 'elements name symbol regex']:
         
         pattern_sub_list = []
         for k, v in ngrams_to_replace_dic[cat].items():
-            pattern_sub_list.append([k, v, f'filtro de {k} -> {v}', False, False ])
+            pattern_sub_list.append([k, v, f'filtro de {k} -> {v}', True, True ])
         
         string_text, filter_log_dic = filter_and_check(pattern_sub_list, string_text, filter_log_dic, filename)
+
 
     #última limpeza de espaços duplicados
     pattern_sub_list = [[r'\s{2,50}', ' ', 'filtro de "\s" juntos', True, False ]]

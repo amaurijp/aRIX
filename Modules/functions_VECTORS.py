@@ -270,9 +270,12 @@ def get_wv_from_sentence(sentence_str,
 
 
 #------------------------------
-def load_dense_matrix(path, matrix_name = None):
+def load_dense_matrix(path, matrix_name = None, read_only = False):
 
-    m = np.load(path + '.npy')
+    if read_only is True:
+        m = np.load(path + '.npy', mmap_mode='r')
+    else:
+        m = np.load(path + '.npy')
 
     if matrix_name is not None:
         print(f'Carregando a matriz {matrix_name} {m.shape}')

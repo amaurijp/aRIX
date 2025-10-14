@@ -185,9 +185,15 @@ def extract_inputs_from_csv(csv_filename = '', diretorio = None, mode = 'search_
                     print('A entrada de "filter_section" não é compatível.')
                     print('Entradas compatíveis: "introduction", "methodology", "results"')
                     print('Valor de entrada: ', inputs_DF.loc[ line , 'filter_section' ])
-            
+
+            #llm selection
+            if inputs_DF.loc[ line , 'llm_model' ].lower() == 'none':
+                dic[line]['search_inputs']['llm_model'] = ''
+            else:
+                dic[line]['search_inputs']['llm_model'] = inputs_DF.loc[ line , 'llm_model' ]
+
             #status
-            for status_input in ('search_status', 'export_status'):
+            for status_input in ('search_status', 'extract_status'):
                 
                 if str(inputs_DF.loc[ line , status_input ]).lower() != 'finished':
                     dic[line][status_input] = 'ongoing'
@@ -499,7 +505,7 @@ def get_vectors_from_input(search_input_dic, lsa_dim = 10, lda_dim = 10):
 def get_file_batch_index_list(total_number, batch_size):
     
     #determinando os slices para os batchs
-    print('Determinando os slices para os batches...')
+    print('  Determinando os slices para os batches...')
     slice_indexes = list(range(0, total_number, batch_size))
     batch_indexes = []
     for i in range(len(slice_indexes)):
@@ -678,23 +684,28 @@ def run_func_in_parallel(func, args, workers = 2):
 
 
 #------------------------------
-def save_dic_to_json(path, dic):
+def save_dic_to_json(path, dic, sort = True):
     
     #sorting
     keys = list(dic.keys())
-    keys.sort()
+    if sort is True:
+        keys.sort()
+    
     dic = {key: dic[key] for key in keys}
 
     for key in keys:
         if type(dic[key]) == dict:
             subkeys = list(dic[key].keys())
-            subkeys.sort()
+            if sort is True:
+                subkeys.sort()
             subdic = {subkey: dic[key][subkey] for subkey in subkeys}
             dic[key] = subdic
 
     with open(path, 'w') as file:
         json.dump(dic, file, indent = 3)
         file.close()
+    
+    print('  salvando o arquivo json em: ', path)
 
 
 #------------------------------

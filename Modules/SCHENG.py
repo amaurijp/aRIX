@@ -294,6 +294,9 @@ class search_engine(object):
         #varrendo os documentos .csv com as sentenças
         for filename in filenames_to_scan:
             
+            #time record
+            time_begin=time.time()
+
             #check caso tenho sido encontrado algo no artigo
             found_in_article = False
             
@@ -417,8 +420,8 @@ class search_engine(object):
                             if self.section_to_find == 'methodology' and self.methods_filter.model_found is True:
                                 section_proba_result['methodology'] = self.methods_filter.check_sent_in_section_for_NN(index, DF = self.sentDF_copy)
                             elif self.methods_filter.model_found is False:
-                                section_proba_result['results'] = 0
-                            if self.section_to_find == 'methodology' and self.results_filter.model_found is True:
+                                section_proba_result['methodology'] = 0
+                            if self.section_to_find == 'results' and self.results_filter.model_found is True:
                                 section_proba_result['results'] = self.results_filter.check_sent_in_section_for_NN(index, DF = self.sentDF_copy)
                             elif self.results_filter.model_found is False:
                                 section_proba_result['results'] = 0
@@ -459,6 +462,7 @@ class search_engine(object):
                     
                 #salvando o search report
                 self.search_report_dic['search'][self.DF_name]['last_article_processed'] = self.filename
+                self.search_report_dic['search'][self.DF_name]['time_to_search'] += time.time() - time_begin
                 save_dic_to_json(self.diretorio + f'/Outputs/log/se_report.json', self.search_report_dic)
 
             else:        
@@ -582,6 +586,7 @@ class search_engine(object):
                 self.search_report_dic['search'][self.DF_name]['total_finds'] = 0
                 self.search_report_dic['search'][self.DF_name]['article_finds'] = 0
                 self.search_report_dic['search'][self.DF_name]['searching_status'] = 'ongoing'
+                self.search_report_dic['search'][self.DF_name]['time_to_search'] = 0
                 self.lastfile_index = 0
 
         else:
@@ -592,6 +597,7 @@ class search_engine(object):
             self.search_report_dic['search'][self.DF_name]['total_finds'] = 0
             self.search_report_dic['search'][self.DF_name]['article_finds'] = 0
             self.search_report_dic['search'][self.DF_name]['searching_status'] = 'ongoing'
+            self.search_report_dic['search'][self.DF_name]['time_to_search'] = 0
             self.lastfile_index = 0
 
 
@@ -757,6 +763,7 @@ class search_engine(object):
 
             search_report_DF.loc[self.DF_name , 'total_finds' ] = self.search_report_dic['search'][self.DF_name]['total_finds']
             search_report_DF.loc[self.DF_name , 'article_finds' ] = self.search_report_dic['search'][self.DF_name]['article_finds']
+            search_report_DF.loc[self.DF_name , 'time_to_search' ] = round(self.search_report_dic['search'][self.DF_name]['time_to_search'], 2)
             search_report_DF.loc[self.DF_name , 'search_status' ] = 'finished'
 
             search_report_DF.sort_index(inplace=True)

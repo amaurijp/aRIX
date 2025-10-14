@@ -19,7 +19,7 @@ from FUNCTIONS import save_dic_to_json
 from functions_PARAMETERS import extract_textual_num_parameter_from_json_str
 from functions_PARAMETERS import list_numerical_parameter
 from functions_PARAMETERS import list_textual_parameter_for_ngrams_search
-from functions_PARAMETERS import list_textual_parameter_for_llm_check
+from functions_PARAMETERS import list_parameter_for_llm_check
 from functions_PARAMETERS import list_textual_parameter_for_llm_search 
 from functions_PARAMETERS import regex_patt_from_parameter
 from functions_PARAMETERS import get_physical_units_converted_to_SI
@@ -39,10 +39,6 @@ class DataFrames(object):
         self.diretorio = diretorio
         self.class_name = 'DataFrames'
 
-        #loading llm
-        self.llm_model = llm('mistral-large:123b-instruct-2407-q2_K')
-
-
 
     def set_settings_for_se(self, SE_inputs = None):
         
@@ -56,6 +52,9 @@ class DataFrames(object):
         self.lower_sentence_in_textual_search = SE_inputs['search_inputs']['lower_sentence_for_semantic']
         self.search_token_by_token = SE_inputs['search_inputs']['search_token_by_token']
         self.filter_unique_results = SE_inputs['search_inputs']['filter_unique_results']
+
+        #loading llm
+        self.llm_model = llm(SE_inputs['search_inputs']['llm_model'])
 
         #abrindo o dic ~/Inputs/ngrams_to_replace
         self.replace_ngrams = False
@@ -103,28 +102,30 @@ class DataFrames(object):
                     return
 
                 try:
-                    self.search_report_dic['export']
+                    self.search_report_dic['extract']
 
                     try:
                         #último filename processado
-                        last_article_processed = self.search_report_dic['export'][self.DF_name]['last_article_processed']
+                        last_article_processed = self.search_report_dic['extract'][self.DF_name]['last_article_processed']
                         last_article_index = articles_filenames.index(last_article_processed) + 1
                         print('Last file searched: ', last_article_processed)
 
                     except KeyError:
-                        self.search_report_dic['export'][self.DF_name] = {}
-                        self.search_report_dic['export'][self.DF_name]['last_article_processed'] = None
-                        self.search_report_dic['export'][self.DF_name]['total_finds'] = 0
-                        self.search_report_dic['export'][self.DF_name]['article_finds'] = 0
+                        self.search_report_dic['extract'][self.DF_name] = {}
+                        self.search_report_dic['extract'][self.DF_name]['last_article_processed'] = None
+                        self.search_report_dic['extract'][self.DF_name]['total_finds'] = 0
+                        self.search_report_dic['extract'][self.DF_name]['article_finds'] = 0
+                        self.search_report_dic['extract'][self.DF_name]['time_to_extract'] = 0
                         last_article_index = 0
                 
                 
                 except KeyError:
-                    self.search_report_dic['export'] = {}
-                    self.search_report_dic['export'][self.DF_name] = {}
-                    self.search_report_dic['export'][self.DF_name]['last_article_processed'] = None
-                    self.search_report_dic['export'][self.DF_name]['total_finds'] = 0
-                    self.search_report_dic['export'][self.DF_name]['article_finds'] = 0
+                    self.search_report_dic['extract'] = {}
+                    self.search_report_dic['extract'][self.DF_name] = {}
+                    self.search_report_dic['extract'][self.DF_name]['last_article_processed'] = None
+                    self.search_report_dic['extract'][self.DF_name]['total_finds'] = 0
+                    self.search_report_dic['extract'][self.DF_name]['article_finds'] = 0
+                    self.search_report_dic['extract'][self.DF_name]['time_to_extract'] = 0
                     last_article_index = 0                
 
             else:
@@ -136,6 +137,9 @@ class DataFrames(object):
                     
                 print(f'\n------------------------------------------')
                 print(f'Extracting parameters from {article_filename}')
+
+                #time record
+                time_begin=time.time()
                 
                 #dicionário para coletar os parâmetros numéricos extraídos
                 self.parameters_extracted = {}
@@ -164,6 +168,8 @@ class DataFrames(object):
                     
                     #extraindo os valores da sentença
                     self.extract_vals_from_sent(sent, sent_index, term_list_to_be_found)
+
+                self.extraction_article_time = time.time() - time_begin
 
                 #time.sleep(2)
                 self.export_to_DF()
@@ -202,11 +208,12 @@ class DataFrames(object):
             #extraindo os parâmetros textuais
             self.extract_textual_parameters(sent, sent_index, self.input_parameter, term_list_to_be_found)
                   
-        print('> Extracted outputs - total n_outputs: ', self.parameters_extracted['total_outputs_extracted'] , ')')
-        print('> ', self.parameters_extracted[sent_index]['outputs'] )
+        if found_parameter is True:
+            print('> Extracted outputs - total n_outputs: ', self.parameters_extracted['total_outputs_extracted'] , ')')
+            print('> ', self.parameters_extracted[sent_index]['outputs'] )
 
         #caso o parâmetro introduzido não esteja nas listas do functions_PARAMETERS (textual e numerical)
-        if found_parameter is False:
+        else:
             
             #listar os parâmetros disponíveis para extração
             available_inputs = list_numerical_parameter() + list_textual_parameter_for_llm_search() + list_textual_parameter_for_ngrams_search(diretorio=self.diretorio)
@@ -344,7 +351,7 @@ class DataFrames(object):
                         counter += 1
         
         #salvando o último arquivo processado
-        self.search_report_dic['export'][self.DF_name]['last_article_processed'] = self.parameters_extracted['filename']
+        self.search_report_dic['extract'][self.DF_name]['last_article_processed'] = self.parameters_extracted['filename']
         
         #salvando a output_DF
         try:
@@ -357,12 +364,13 @@ class DataFrames(object):
                     
             #contadores para exportar nas DFs de report
             
-            self.search_report_dic['export'][self.DF_name]['total_finds'] += self.parameters_extracted['total_outputs_extracted']
-            self.search_report_dic['export'][self.DF_name]['article_finds'] += 1
+            self.search_report_dic['extract'][self.DF_name]['total_finds'] += self.parameters_extracted['total_outputs_extracted']
+            self.search_report_dic['extract'][self.DF_name]['article_finds'] += 1
+            self.search_report_dic['extract'][self.DF_name]['time_to_extract'] += self.extraction_article_time
 
             print('\nExtract summary')
-            print('> total finds:', self.search_report_dic['export'][self.DF_name]['total_finds'])
-            print('> articles finds:', self.search_report_dic['export'][self.DF_name]['article_finds'])
+            print('> total finds:', self.search_report_dic['extract'][self.DF_name]['total_finds'])
+            print('> articles finds:', self.search_report_dic['extract'][self.DF_name]['article_finds'])
         
             #salvando o DF report
             save_dic_to_json(self.diretorio + f'/Outputs/log/se_report.json', self.search_report_dic)
@@ -378,9 +386,10 @@ class DataFrames(object):
         if os.path.exists(self.diretorio + '/Settings/SE_inputs.csv'):
             search_report_DF = pd.read_csv(self.diretorio + '/Settings/SE_inputs.csv', index_col = 0)
 
-            search_report_DF.loc[self.DF_name, 'total_extracted'] = self.search_report_dic['export'][self.DF_name]['total_finds']
-            search_report_DF.loc[self.DF_name, 'articles_extracted'] = self.search_report_dic['export'][self.DF_name]['article_finds']
-            search_report_DF.loc[self.DF_name , 'export_status' ] = 'finished'
+            search_report_DF.loc[self.DF_name, 'total_extracted'] = self.search_report_dic['extract'][self.DF_name]['total_finds']
+            search_report_DF.loc[self.DF_name, 'articles_extracted'] = self.search_report_dic['extract'][self.DF_name]['article_finds']
+            search_report_DF.loc[self.DF_name , 'time_to_extract' ] = round(self.search_report_dic['extract'][self.DF_name]['time_to_extract'], 2)
+            search_report_DF.loc[self.DF_name , 'extract_status' ] = 'finished'
 
             search_report_DF.sort_index(inplace=True)
             search_report_DF.to_csv(self.diretorio + '/Settings/SE_inputs.csv')
@@ -686,7 +695,7 @@ class DataFrames(object):
                 return
             
             #vendo se existe um setup para o parâmetro a ser checado
-            if self.parameter_to_consolidate not in list_textual_parameter_for_llm_check():
+            if self.parameter_to_consolidate not in list_parameter_for_llm_check():
                 print(f"\nERRO! O parâmetro '{self.parameter_to_consolidate}' não foi adicionado aos arquivos 'LLM.py' e 'functions_PARAMETERS.py'\n")
                 time.sleep(5)
                 return

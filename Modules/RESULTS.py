@@ -49,7 +49,7 @@ from functions_STATS import diff_of_welch_t_means, permutation_test_welch_anova,
 
 class results(object):
     
-    def __init__(self, DF_input_name = 'None', diretorio = None):
+    def __init__(self, DF_input_name = 'None', diretorio = None, color_pat = "flare"):
                 
         print('\n( Class: results )')
         print('> opening consolidated DF...')
@@ -57,8 +57,8 @@ class results(object):
         self.diretorio = diretorio
 
         #checando os diretorios
-        if not os.path.exists(self.diretorio + '/Outputs/plots'):
-            os.makedirs(self.diretorio + '/Outputs/plots')
+        if not os.path.exists(self.diretorio + '/Outputs/analyses'):
+            os.makedirs(self.diretorio + '/Outputs/analyses')
 
         #importando a DF consolidada        
         self.results_DF = pd.read_csv(self.diretorio + f'/Outputs/dataframes/{DF_input_name}.csv', index_col=[0,1])
@@ -78,7 +78,7 @@ class results(object):
             self.index_lists = load_dic_from_json(self.diretorio + '/Outputs/log/index_lists.json')
 
         #econtrando o ultimo numerador dos arquivos de figuras
-        filenames = get_filenames_from_folder(folder = self.diretorio + '/Outputs/plots', file_type='png')
+        filenames = get_filenames_from_folder(folder = self.diretorio + '/Outputs/analyses', file_type='png')
         if filenames is not None and len(filenames) > 0:
             filenames.sort()
             self.last_fig_counter = int(filenames[-1])
@@ -86,23 +86,41 @@ class results(object):
             self.last_fig_counter = 0
 
         #abrindo dic com os setups das figuras
-        if not os.path.exists(self.diretorio + '/Outputs/log/plotsetup.json'):
+        if not os.path.exists(self.diretorio + '/Outputs/analyses/dic_plotsetup.json'):
             self.plotsetup = dict()
         else:
-            self.plotsetup = load_dic_from_json(self.diretorio + '/Outputs/log/plotsetup.json')
+            self.plotsetup = load_dic_from_json(self.diretorio + '/Outputs/analyses/dic_plotsetup.json')
 
         #abrindo dic com os outputs dos stats_results
-        if not os.path.exists(self.diretorio + '/Outputs/log/stats_results.json'):
+        if not os.path.exists(self.diretorio + '/Outputs/analyses/dic_stats_results.json'):
             self.stats_results = dict()
         else:
-            self.stats_results = load_dic_from_json(self.diretorio + '/Outputs/log/stats_results.json')
+            self.stats_results = load_dic_from_json(self.diretorio + '/Outputs/analyses/dic_stats_results.json')
+
+        #abrindo dic com os outputs dos cats_len
+        if not os.path.exists(self.diretorio + '/Outputs/analyses/dic_cat_len_results.json'):
+            self.cat_len_results = dict()
+        else:
+            self.cat_len_results = load_dic_from_json(self.diretorio + '/Outputs/analyses/dic_cat_len_results.json')
 
         #escolhendo uma paleta de cores
-        self.color_palette = "flare"
+        self.color_palette = color_pat
+        if color_pat == 'flare':
+            self.contrast_text_color_to_plot = 'black'
+        elif color_pat == 'viridis':
+            self.contrast_text_color_to_plot = 'white'
 
 
 
-    def remove_terms_in_DF_with_json(self, cats = []):
+    def merge_str_columns(self, new_column_name: str = '', columns: list = [], sep: str = ' '):
+        
+        self.results_DF_copy[new_column_name] = ''
+        for column in columns:
+            self.results_DF_copy[new_column_name] = self.results_DF_copy[new_column_name] + f' {sep} ' + self.results_DF_copy[column]
+
+
+
+    def remove_terms_in_DF_with_json(self, columns = []):
 
         print('> removing terms from cats in ~/Inputs/ngrams_to_remove.json...')
         
@@ -110,40 +128,40 @@ class results(object):
         dic_to_remove = load_dic_from_json(self.diretorio + '/Inputs/ngrams_to_remove.json')
         
         #removendo termos presentes no dic ngrams_to_remove
-        for cat in cats:
-            if (cat in self.results_DF_copy.columns) and (cat in dic_to_remove.keys()):
+        for column in columns:
+            if (column in self.results_DF_copy.columns) and (column in dic_to_remove.keys()):
                 
                 #contando quantas aparições o termo term
-                unique, counts = np.unique(self.results_DF_copy[cat].values.astype(str), return_counts=True)
+                unique, counts = np.unique(self.results_DF_copy[column].values.astype(str), return_counts=True)
                 dic_counter = dict(zip(unique, counts))
                 
-                for term in dic_to_remove[cat]:
+                for term in dic_to_remove[column]:
                     try:
                         #replacing
-                        self.results_DF_copy = self.results_DF_copy.reset_index().set_index(cat).drop(index = term).reset_index().set_index(['Filename', 'Counter'])
-                        print(f'  removing term {term} in cat: {cat} ({dic_counter[term]} removals)')
+                        self.results_DF_copy = self.results_DF_copy.reset_index().set_index(column).drop(index = term).reset_index().set_index(['Filename', 'Counter'])
+                        print(f'  removing term {term} in cat: {column} ({dic_counter[term]} removals)')
                     except KeyError:
                         continue
             
             else:
-                print(f'  Erro! cat: {cat} não encontrada ou no DF ou no arquivo /Inputs/ngrams_to_remove.json')
+                print(f'  Erro! cat: {column} não encontrada ou no DF ou no arquivo /Inputs/ngrams_to_remove.json')
 
 
 
-    def change_terms_in_DF_with_json(self, cats : dict = {'None':'None'}):
+    def change_terms_in_DF_with_json(self, column_json_key : dict = {'None':'None'}):
 
         print('> replacing terms from cats in ~/Inputs/ngrams_to_replace.json...')
 
         #abrindo o dic
         dic_to_replace = load_dic_from_json(self.diretorio + '/Inputs/ngrams_to_replace.json')
 
-        for cat, val in cats.items():
-            if (cat in dic_to_replace.keys()) and (val in self.results_DF_copy.columns):
-                print(f'  replacing {cat} -> {val}')
-                self.results_DF_copy.replace({f'{val}': dic_to_replace[cat]}, inplace = True)
+        for column, key in column_json_key.items():
+            if (key in dic_to_replace.keys()) and (column in self.results_DF_copy.columns):
+                print(f'  replacing {column} -> {key}')
+                self.results_DF_copy.replace({f'{column}': dic_to_replace[key]}, inplace = True)
                 
             else:
-                print(f'  Erro! cat {cat} ou val {val} não encontrado ou no DF consolidado.')
+                print(f'  Erro! cat {column} ou val {key} não encontrado ou no DF consolidado.')
 
 
 
@@ -205,15 +223,15 @@ class results(object):
 
 
     def export_grouped_cats_num(self, cat_col_to_group='', num_cols_range_to_cluster={'': [], '': []},
-                                cats_terms_to_filter = { '' : [''] }, terms_to_remove = [], terms_to_replace = {}):
+                                cats_terms_to_filter = { 'col1' : ['term1', 'term2'] }, terms_to_remove = ['term1', 'term2'], terms_to_replace = {}):
         
         #format num_cols_range_to_cluster = {'num_col': [multiplier, stat_function_to_get_vals, [min_val, max_val], remove_extreme_vals, min_num_vals_occur]]} 
         
         print(f'\n> function: export_grouped_cats_num: {cat_col_to_group} - {str(num_cols_range_to_cluster.keys())} - {str(cats_terms_to_filter)}')
         
         #copiando a DF para processar
-        check_cats_to_filter = check_cats_in_DF( list(cats_terms_to_filter.keys()) , self.results_DF_copy )
-        if check_cats_to_filter is True:
+        columns_checked_in_DF = check_columns_in_DF( list(cats_terms_to_filter.keys()) , self.results_DF_copy )
+        if columns_checked_in_DF is True:
             self.results_DF_processed = self.results_DF_copy[ [ cat_col_to_group ] + list(num_cols_range_to_cluster.keys()) + list(cats_terms_to_filter.keys()) ].copy()
         else:
             self.results_DF_processed = self.results_DF_copy[ [ cat_col_to_group ] + list(num_cols_range_to_cluster.keys()) ].copy()
@@ -223,23 +241,10 @@ class results(object):
             if term in self.results_DF_processed[cat_col_to_group].values:
                 self.results_DF_processed = self.results_DF_processed.reset_index().set_index(cat_col_to_group).drop(index = term).reset_index().set_index(['Filename', 'Counter'])
 
-        #filtrando categorias
-        if check_cats_to_filter is True:
-            for cat in cats_terms_to_filter.keys():
-                if type(cats_terms_to_filter[cat]) == list and len(cats_terms_to_filter[cat]) > 0:
-                    groups_index_dic = self.results_DF_processed.groupby(by=cat).groups
-                    index_group_list = []
-                    for group in groups_index_dic:
-                        if group in cats_terms_to_filter[cat]:
-                            index_group_list.extend( groups_index_dic[group] )
-                    
-                    self.results_DF_processed = self.results_DF_processed.loc[ index_group_list ].copy()
-            
-            #print('\nDF pós filtro:')
-            #print(self.results_DF_processed)
-        else:
-            self.results_DF_processed = self.results_DF_processed.copy()
-
+        #filtrando cats em colunas (quando filtra se determina um plot_title para mostrar o que foi filtrado)
+        self.results_DF_processed, _ = filter_categories(self.results_DF_processed, 
+                                                         columns_checked_in_DF, 
+                                                         cats_terms_to_filter)
         
         #extraindo os valores numéricos para cada grupo
         stats_col_cat_val = {}
@@ -287,10 +292,10 @@ class results(object):
         #windows does not allow character ':' from python dic
         cats_terms_to_filter_ = re.sub(r':', '-', str(cats_terms_to_filter))
 
-        print('  exporting dataframe with values to ', f'/Outputs/plots/df_mean_vals_{cat_col_to_group}_filter_{cats_terms_to_filter_}.csv')
-        df_to_export.to_csv(self.diretorio + f'/Outputs/plots/df_mean_vals_{cat_col_to_group}_filter_{cats_terms_to_filter_}.csv')
-        print('  exporting latex table with values to ', f'/Outputs/plots/table_mean_vals_{cat_col_to_group}_filter_{cats_terms_to_filter_}.txt')
-        self.export_df_to_latex_table(df_to_export, self.diretorio + f'/Outputs/plots/df_mean_vals_{cat_col_to_group}_filter_{cats_terms_to_filter_}.txt',
+        print('  exporting dataframe with values to ', f'/Outputs/analyses/df_mean_vals_{cat_col_to_group}_filter_{cats_terms_to_filter_}.csv')
+        df_to_export.to_csv(self.diretorio + f'/Outputs/analyses/df_mean_vals_{cat_col_to_group}_filter_{cats_terms_to_filter_}.csv')
+        print('  exporting latex table with values to ', f'/Outputs/analyses/table_mean_vals_{cat_col_to_group}_filter_{cats_terms_to_filter_}.txt')
+        self.export_df_to_latex_table(df_to_export, self.diretorio + f'/Outputs/analyses/df_mean_vals_{cat_col_to_group}_filter_{cats_terms_to_filter_}.txt',
                                       terms_to_replace = terms_to_replace)
 
 
@@ -308,11 +313,11 @@ class results(object):
                     if type(df.iloc[ i , j ]) == float:
                         file.write( '' )
                     
-                    elif re.match(r'[A-Za-z]+', df.iloc[ i , j ]):
+                    elif re.match(r'[$\s\+]*[0-9]*[$A-Za-z\-\+]+[$\s\+]*?', df.iloc[ i , j ]):
                         try:
                             r_term = terms_to_replace[df.iloc[ i , j ]]
                         except KeyError:
-                            r_term = '$' + df.iloc[ i , j ] + '$'
+                            r_term = df.iloc[ i , j ]
                         
                         file.write( r_term )
 
@@ -348,8 +353,8 @@ class results(object):
 
 
     def plot_cat_barh(self, cat = None, font_scale = None, x_label = None, y_label = None, max_nbars = 10, 
-                      log_scale = False, terms_to_remove = [], x_label_rotation = 70,
-                      replace_terms_to_plot = {}):
+                      log_scale = False, terms_to_remove = ['term1', 'term2'], x_label_rotation = 70,
+                      replace_terms_to_plot = { 'term1' : 'term_to_replace'}):
         
         print('\n> function: plot_cat_barh: ', cat)
                 
@@ -377,7 +382,7 @@ class results(object):
             counter += 1
             try:
                 cat_val_array[counter] = ( replace_terms_to_plot[cat] , val)
-                print('Replacing term to plot: ', cat, '->', replace_terms_to_plot[cat])
+                print('  Replacing term to plot: ', cat, '->', replace_terms_to_plot[cat])
             except KeyError:    
                 continue
 
@@ -389,23 +394,24 @@ class results(object):
 
     def plot_cat_cat_barv(self, cat_to_group = None, cat_to_count = None, vals_to_count = [], vals_to_ignore = [],
                         font_scale = None, x_label = None, y1_label = None, y2_label = None, max_nbars = 10, 
-                        y1_lims = None, y2_lims = None, order_in_perc = False,
-                        terms_to_remove = [], x_label_rotation = 70, cats_terms_to_filter = {},
-                        replace_terms_to_plot = {}, remove_duplicates = True):
+                        y1_lims = [], y2_lims = [], order_in_perc = False,
+                        terms_to_remove = ['term1', 'term2'], x_label_rotation = 70, 
+                        cats_terms_to_filter = { 'col1' : ['term1', 'term2'] },
+                        replace_terms_to_plot = { 'term1' : 'term_to_replace'}, remove_duplicates = True):
         
         print('\n> function: plot_cat_cat_barh: ', cat_to_group, cat_to_count)
         
         #copiando a DF para processar
-        check_cats_to_filter = check_cats_in_DF( list(cats_terms_to_filter.keys()) , self.results_DF_copy )
-        if check_cats_to_filter is True:
+        columns_checked_in_DF = check_columns_in_DF( list(cats_terms_to_filter.keys()) , self.results_DF_copy )
+        if columns_checked_in_DF is True:
             self.results_DF_processed = self.results_DF_copy[ [cat_to_group, cat_to_count] + list(cats_terms_to_filter.keys()) ].copy()
         else:
             self.results_DF_processed = self.results_DF_copy[ [cat_to_group, cat_to_count] ].copy()
 
-        #checando se as categorias estão no DF
-        for cat in [cat_to_group, cat_to_count]:
-            if cat not in self.results_DF_processed.columns:
-                print(f'  Erro! A cat {cat} não está presente no DF.')
+        #checando se as cols estão no DF
+        for col in [cat_to_group, cat_to_count]:
+            if col not in self.results_DF_processed.columns:
+                print(f'  Erro! A col {col} não está presente no DF.')
                 print('  Cats presentes: ', self.results_DF_processed.columns)
                 return
         
@@ -415,23 +421,10 @@ class results(object):
                 if term in self.results_DF_processed[cat].values:
                     self.results_DF_processed = self.results_DF_processed.reset_index().set_index(cat).drop(index = term).reset_index().set_index(['Filename', 'Counter'])
 
-        #filtrando categorias
-        barvplot_title = ''
-        if check_cats_to_filter is True:
-            for cat in cats_terms_to_filter.keys():
-                if type(cats_terms_to_filter[cat]) == list and len(cats_terms_to_filter[cat]) > 0:
-                    groups_index_dic = self.results_DF_processed.groupby(by=cat).groups
-                    index_group_list = []
-                    for group in groups_index_dic:
-                        if group in cats_terms_to_filter[cat]:
-                            index_group_list.extend( groups_index_dic[group] )
-                            barvplot_title += group + ', '
-                    
-                    self.results_DF_processed = self.results_DF_processed.loc[ index_group_list ]
-            
-            barvplot_title = barvplot_title[ : -2]
-            #print('\nDF pós filtro:')
-            #print(self.results_DF_processed)
+        #filtrando cats em colunas (quando filtra se determina um plot_title para mostrar o que foi filtrado)
+        self.results_DF_processed, plot_title = filter_categories(self.results_DF_processed, 
+                                                                columns_checked_in_DF, 
+                                                                cats_terms_to_filter)
 
         #Eliminando os NaN
         self.results_DF_processed = self.results_DF_processed[ [cat_to_group, cat_to_count] ]
@@ -480,7 +473,7 @@ class results(object):
             counter += 1
             try:
                 cat_val_array[counter] = ( replace_terms_to_plot[cat] , val)
-                print('Replacing term to plot: ', cat, '->', replace_terms_to_plot[cat])
+                print('  Replacing term to plot: ', cat, '->', replace_terms_to_plot[cat])
             except KeyError:    
                 continue
 
@@ -489,26 +482,26 @@ class results(object):
 
         self.cat_barv(categories = cat_val_array[ : , 0], values_a = cat_val_array[ : , 1], values_b = cat_perc_array[ : , 1],
                       font_scale = font_scale, x_label = x_label, y1_label = y1_label, y2_label = y2_label, 
-                      y1_lims = y1_lims, y2_lims = y2_lims, plot_title = barvplot_title,
+                      y1_lims = y1_lims, y2_lims = y2_lims, plot_title = plot_title,
                       plot_counter = plot_counter, x_label_rotation = x_label_rotation)
 
 
 
     def plot_cat_cat_heatmap(self, cats = ['None', 'None'], 
                              x_label = None, y_label = None,
-                             cats_terms_to_filter = { '' : [''] },
+                             cats_terms_to_filter = { 'col1' : ['term1', 'term2'] },
                              n_box_in_grid = 30, 
                              font_scale = 10,
                              x_label_rotation = 70,
-                             terms_to_remove = [],
+                             terms_to_remove = ['term1', 'term2'],
                              plot_margins = {},
-                             replace_terms_to_plot = {}):
+                             replace_terms_to_plot = { 'term1' : 'term_to_replace'}):
         
         print('\n> function: plot_cat_cat_heatmap: ', cats)
 
         #copiando a DF para processar
-        check_cats_to_filter = check_cats_in_DF( list(cats_terms_to_filter.keys()) , self.results_DF_copy )
-        if check_cats_to_filter is True:
+        columns_checked_in_DF = check_columns_in_DF( list(cats_terms_to_filter.keys()) , self.results_DF_copy )
+        if columns_checked_in_DF is True:
             self.results_DF_processed = self.results_DF_copy[ cats + list(cats_terms_to_filter.keys()) ].copy()
         else:
             self.results_DF_processed = self.results_DF_copy[ cats ].copy()
@@ -526,23 +519,10 @@ class results(object):
                 if term in self.results_DF_processed[cat].values:
                     self.results_DF_processed = self.results_DF_processed.reset_index().set_index(cat).drop(index = term).reset_index().set_index(['Filename', 'Counter'])
 
-        #filtrando categorias
-        plot_title = ''
-        if check_cats_to_filter is True:
-            for cat in cats_terms_to_filter.keys():
-                if type(cats_terms_to_filter[cat]) == list and len(cats_terms_to_filter[cat]) > 0:
-                    groups_index_dic = self.results_DF_processed.groupby(by=cat).groups
-                    index_group_list = []
-                    for group in groups_index_dic:
-                        if group in cats_terms_to_filter[cat]:
-                            index_group_list.extend( groups_index_dic[group] )
-                            plot_title += group + ', '
-                    
-                    self.results_DF_processed = self.results_DF_processed.loc[ index_group_list ]
-            
-            plot_title = plot_title[ : -2]
-            #print('\nDF pós filtro:')
-            #print(self.results_DF_processed)
+        #filtrando cats em colunas (quando filtra se determina um plot_title para mostrar o que foi filtrado)
+        self.results_DF_processed, plot_title = filter_categories(self.results_DF_processed, 
+                                                                columns_checked_in_DF, 
+                                                                cats_terms_to_filter)
 
         #Eliminando os NaN
         self.results_DF_processed = self.results_DF_processed[ cats ]
@@ -584,7 +564,7 @@ class results(object):
                                    stat_func_to_extract = 'mean',
                                    x_label = None, y_label = None, y_lims = [0, 1], 
                                    n_cats = 10, min_num_vals_occur = 11, log_scale = False,
-                                   cats_terms_to_filter = ( 'None' , ['', ''] ),
+                                   cats_terms_to_filter = { 'col1' : ['term1', 'term2'] },
                                    x_label_rotation = 70,
                                    font_scale_boxplot = 10,
                                    font_scale_stats_test_grid = 10,
@@ -594,8 +574,8 @@ class results(object):
                                    y_multiplier = None,
                                    stats_method = 'permutation', #anova #permutation
                                    remove_extreme_vals = None,
-                                   terms_to_remove = [],
-                                   replace_terms_to_plot = {},
+                                   terms_to_remove = ['term1', 'term2'],
+                                   replace_terms_to_plot = { 'term1' : 'term_to_replace'},
                                    exclude_outliers_to_stats_test = False):
         
         print('\n> function: plot_cat_num_boxplot: ', cat_col, num_col)
@@ -603,16 +583,16 @@ class results(object):
         #1 plotando o boxplot
 
         #copiando a DF para processar
-        check_cats_to_filter = check_cats_in_DF( list(cats_terms_to_filter.keys()) , self.results_DF_copy )
-        if check_cats_to_filter is True:
+        columns_checked_in_DF = check_columns_in_DF( list(cats_terms_to_filter.keys()) , self.results_DF_copy )
+        if columns_checked_in_DF is True:
             self.results_DF_processed = self.results_DF_copy[ [ cat_col, num_col] + list(cats_terms_to_filter.keys()) ].copy()
         else:
             self.results_DF_processed = self.results_DF_copy[ [ cat_col, num_col] ].copy()
 
-        #checando se as categorias estão no DF
-        for cat in [cat_col, num_col]:
-            if cat not in self.results_DF_processed.columns:
-                print(f'  Erro! A cat {cat} não está presente no DF.')
+        #checando se as cols estão no DF
+        for col in [cat_col, num_col]:
+            if col not in self.results_DF_processed.columns:
+                print(f'  Erro! A col {col} não está presente no DF.')
                 print('  Cats presentes: ', self.results_DF_processed.columns)
                 return
 
@@ -621,23 +601,10 @@ class results(object):
             if term in self.results_DF_processed[cat_col].values:
                 self.results_DF_processed = self.results_DF_processed.reset_index().set_index(cat_col).drop(index = term).reset_index().set_index(['Filename', 'Counter'])
 
-        #filtrando categorias
-        boxplot_title = ''
-        if check_cats_to_filter is True:
-            for cat in cats_terms_to_filter.keys():
-                if type(cats_terms_to_filter[cat]) == list and len(cats_terms_to_filter[cat]) > 0:
-                    groups_index_dic = self.results_DF_processed.groupby(by=cat).groups
-                    index_group_list = []
-                    for group in groups_index_dic:
-                        if group in cats_terms_to_filter[cat]:
-                            index_group_list.extend( groups_index_dic[group] )
-                            boxplot_title += group + ', '
-                    
-                    self.results_DF_processed = self.results_DF_processed.loc[ index_group_list ]
-            
-            boxplot_title = boxplot_title[ : -2]
-            #print('\nDF pós filtro:')
-            #print(self.results_DF_processed)
+        #filtrando cats em colunas (quando filtra se determina um plot_title para mostrar o que foi filtrado)
+        self.results_DF_processed, plot_title = filter_categories(self.results_DF_processed, 
+                                                                columns_checked_in_DF, 
+                                                                cats_terms_to_filter)
 
         #Eliminando os NaN
         self.results_DF_processed = self.results_DF_processed[ [ cat_col, num_col] ]
@@ -650,8 +617,7 @@ class results(object):
         groups_index_dic = self.results_DF_processed.groupby(by=cat_col).groups
 
         #extraindo os valores numéricos para cada grupo
-        vals_cat_dic = {}
-        len_cat_list = []
+        cat_val_len_list = []
         for cat in groups_index_dic.keys():
             vals = self.extract_vals_from_df_str(indexes = groups_index_dic[ cat ], 
                                                num_col = num_col,
@@ -659,15 +625,21 @@ class results(object):
                                                interval_to_filter = y_lims,
                                                axis_multiplier = y_multiplier,
                                                remove_extreme_vals = remove_extreme_vals)
-            
+
             vals = vals[~np.isnan(vals.astype(float))]
-            if len(vals) >= min_num_vals_occur:
-                vals_cat_dic[ cat ] = vals
-                len_cat_list.append((cat, len(vals)))
-        
+            cat_val_len_list.append( (cat, vals, len(vals)) )
+            
+            #if len(vals) >= min_num_vals_occur:
+            #vals_cat_dic[ cat ] = vals
+            #cat_len_list.append((cat, len(vals)))
+
+        #filtrando somente cats que tenham len(vals) >= min_num_vals_occur
+        cat_val_len_list = [ (cat, vals, n_vals) for cat, vals, n_vals in cat_val_len_list if n_vals >= min_num_vals_occur]
+        #cat_vals_dic = dict([ (cat, vals) for cat, vals, length in cat_val_len_list ])
+
         #caso o número de categorias inserido seja maior que o número de grupos com valores numéricos
         print('  input n_cats: ', n_cats)
-        n_cats = len(vals_cat_dic.keys()) if n_cats > len(vals_cat_dic.keys()) else n_cats
+        n_cats = len(cat_val_len_list) if n_cats > len(cat_val_len_list) else n_cats
         print('  output n_cats: ', n_cats)
 
         #caso tenha mais de 1 categoria para plotar
@@ -678,19 +650,18 @@ class results(object):
             return
 
         #sorting dic e coletando só as cats com mais valores
-        len_cat_list = sorted( len_cat_list, key=lambda x: x[1])
-        len_cat_list = sorted( len_cat_list[ -n_cats : ], key=lambda x: x[0])
-        cats_len_dic  = dict( len_cat_list)
+        cat_val_len_list = sorted( cat_val_len_list, key=lambda x: x[2])
+        cat_val_len_list = sorted( cat_val_len_list[ -n_cats : ], key=lambda x: x[0])
+        #cats_len_dic  = dict( cat_len_list)
 
         nums_grouped = []
         cats_grouped = []
         n_points_per_box = []
-        for cat, length in cats_len_dic.items():
+        for cat, vals, n_vals in cat_val_len_list:
             
-            nums_grouped.append( vals_cat_dic[ cat ] )
             cats_grouped.append( cat )
-            n_points_per_box.append(length)
-
+            nums_grouped.append( vals )
+            n_points_per_box.append(n_vals)
 
         if len(cats_grouped) < n_cats:
             print('\nERRO!')
@@ -703,11 +674,11 @@ class results(object):
         plot_counter = self.get_plot_counter(f'plot_cat_num_boxplot_{cat_col}_{num_col}_{str(cats_terms_to_filter)}')
 
         nums_grouped = self.box_plot(nums_grouped = nums_grouped, cats_grouped = cats_grouped, n_cats = n_cats, 
-                                        n_points_per_box = n_points_per_box, log_scale = log_scale, y_lims = y_lims, 
-                                        x_label = x_label, y_label = y_label, x_label_rotation = x_label_rotation, 
-                                        font_scale_boxplot = font_scale_boxplot, plot_counter = plot_counter, 
-                                        plot_title = boxplot_title, plot_margins = boxplot_plot_margins,
-                                        replace_terms_to_plot = replace_terms_to_plot, exclude_outliers = exclude_outliers_to_stats_test)
+                                    n_points_per_box = n_points_per_box, log_scale = log_scale, y_lims = y_lims, 
+                                    x_label = x_label, y_label = y_label, x_label_rotation = x_label_rotation, 
+                                    font_scale_boxplot = font_scale_boxplot, plot_counter = plot_counter, 
+                                    plot_title = plot_title, plot_margins = boxplot_plot_margins,
+                                    replace_terms_to_plot = replace_terms_to_plot, exclude_outliers = exclude_outliers_to_stats_test)
 
         #fazendo o teste multicomponente
         plot_title = ''
@@ -748,43 +719,42 @@ class results(object):
             #fazendo o permutation para todos os cat - vals
             cat_vals_dic = dict( [ (cat, vals) for cat, vals in zip(cats_grouped, nums_grouped) ] )
             
-            stats_test_cat_cat_val_array = []
+            stats_test_cat_cat_p_array = []
             for cat1, cat2 in itt.combinations(cat_vals_dic.keys(), 2):
                 vals_group1 = cat_vals_dic[cat1]
                 vals_group2 = cat_vals_dic[cat2]
 
-                stats_test_cat_cat_val_array.append( (cat1 , cat2, permutation_test_AB(vals_group1, vals_group2,
+                stats_test_cat_cat_p_array.append( (cat1 , cat2, permutation_test_AB(vals_group1, vals_group2,
                                                                                        statistic = diff_of_welch_t_means,
                                                                                        n_resamples = 20000,
                                                                                        alternative = 'two-sided',
                                                                                        random_state = 42)) )
                 
-            stats_test_cat_cat_val_array = np.array(stats_test_cat_cat_val_array, dtype=object)
+            stats_test_cat_cat_p_array = np.array(stats_test_cat_cat_p_array, dtype=object)
             #stats_test_cat_cat_val_array = p_holm_bh_correction(stats_test_cat_cat_val_array)
             
-            for cat1, cat2, p in stats_test_cat_cat_val_array:
+            for cat1, cat2, p in stats_test_cat_cat_p_array:
                 if p <= 0.05:
                     #salvando o anova em json
                     self.stats_results[f'boxplot_{stats_method}_{cat_col}_{num_col}_{str(cats_terms_to_filter)}'].append(
                         f'{cat1} - mean = { stats_test_mean_cat_val[cat1] / y_multiplier} : {cat2} - mean = { stats_test_mean_cat_val[cat2] / y_multiplier} : p-val = {p}')
 
 
-        save_dic_to_json(self.diretorio + '/Outputs/log/stats_results.json', self.stats_results)
+        save_dic_to_json(self.diretorio + '/Outputs/analyses/dic_stats_results.json', self.stats_results)
 
-        #só se plota o grid com mais de 3 cats
+        #fazendo o plot dos valores p
         if len(cats_grouped) >= 3:
             #plotando o stats_tets
             #procurando se já existe o setup do plot
             plot_counter = self.get_plot_counter(f'plot_cat_cat_heatmap_{stats_method}_{cat_col}_{num_col}_{str(cats_terms_to_filter)}')
 
-            #fazendo o TUKEY HONESTLY SIGNIFICANT DIFFERENCE
-            stats_test_cat_cat_val_filtered_list = []
-            for cat1, cat2, p in stats_test_cat_cat_val_array:
-                if cat1 in cats_len_dic.keys() and cat2 in cats_len_dic.keys():
-                    stats_test_cat_cat_val_filtered_list.append((cat1, cat2, p))
+            #stats_test_cat_cat_val_filtered_list = []
+            #for cat1, cat2, p in stats_test_cat_cat_val_array:
+            #    if cat1 in cats_len_dic.keys() and cat2 in cats_len_dic.keys():
+            #        stats_test_cat_cat_val_filtered_list.append((cat1, cat2, p))
             
-            stats_test_cat_cat_val_array = np.array(stats_test_cat_cat_val_filtered_list, dtype = object)
-            self.cat_cat_heatmap(stats_test_cat_cat_val_array, font_scale = font_scale_stats_test_grid, box_vals = 0.05, 
+            #stats_test_cat_cat_p_array = np.array(stats_test_cat_cat_val_filtered_list, dtype = object)
+            self.cat_cat_heatmap(stats_test_cat_cat_p_array, font_scale = font_scale_stats_test_grid, box_vals = 0.05, 
                                 box_values_font_scale = box_values_font_scale, plot_counter = plot_counter, plot_title =plot_title, 
                                 x_annotation_delta = stats_test_x_annotation_delta, y_annotation_delta = stats_test_y_annotation_delta, 
                                 x_label_rotation = x_label_rotation, bar_label = 'p-val', replace_terms_to_plot = replace_terms_to_plot)
@@ -797,7 +767,7 @@ class results(object):
                                 stat_func_to_extract = 'mean',
                                 stat_func_to_group = 'mean',
                                 x_label = None, y_label = None, bar_label = None,
-                                cats_terms_to_filter = { '' : [''] },
+                                cats_terms_to_filter = { 'col1' : ['term1', 'term2'] },
                                 n_box_in_grid = 10, 
                                 min_num_vals_occur = 11,
                                 font_scale_grid = 10,
@@ -805,25 +775,25 @@ class results(object):
                                 x_label_rotation = 70,
                                 z_multiplier = None,
                                 stats_method = 'anova', #permutation
-                                z_lims = None,
+                                z_lims = [],
                                 x_annotation_delta = 0, y_annotation_delta = 0, 
                                 remove_extreme_vals = None,
-                                terms_to_remove = [],
+                                terms_to_remove = ['term1', 'term2'],
                                 grid_plot_margins = None):
         
         print('\n> function: plot_cat_cat_num_heatmap: ', cats_col, num_col)
 
         #copiando a DF para processar
-        check_cats_to_filter = check_cats_in_DF( list(cats_terms_to_filter.keys()) , self.results_DF_copy )
-        if check_cats_to_filter is True:
+        columns_checked_in_DF = check_columns_in_DF( list(cats_terms_to_filter.keys()) , self.results_DF_copy )
+        if columns_checked_in_DF is True:
             self.results_DF_processed = self.results_DF_copy[ [ cats_col[0], cats_col[1], num_col ] + list(cats_terms_to_filter.keys()) ].copy()
         else:
             self.results_DF_processed = self.results_DF_copy[ [ cats_col[0], cats_col[1], num_col ] ].copy()
 
         #checando se as categorias estão no DF
-        for cat in [ cats_col[0], cats_col[1], num_col]:
-            if cat not in self.results_DF_processed.columns:
-                print(f'  Erro! A cat {cat} não está presente no DF.')
+        for col in [ cats_col[0], cats_col[1], num_col]:
+            if col not in self.results_DF_processed.columns:
+                print(f'  Erro! A col {col} não está presente no DF.')
                 print('  Cats presentes: ', self.results_DF_processed.columns)
                 return
 
@@ -833,23 +803,10 @@ class results(object):
                 if term in self.results_DF_processed[cat].values:
                     self.results_DF_processed = self.results_DF_processed.reset_index().set_index(cat).drop(index = term).reset_index().set_index(['Filename', 'Counter'])
 
-        #filtrando categorias
-        plot_title = ''
-        if check_cats_to_filter is True:
-            for cat in cats_terms_to_filter.keys():
-                if type(cats_terms_to_filter[cat]) == list and len(cats_terms_to_filter[cat]) > 0:
-                    groups_index_dic = self.results_DF_processed.groupby(by=cat).groups
-                    index_group_list = []
-                    for group in groups_index_dic:
-                        if group in cats_terms_to_filter[cat]:
-                            index_group_list.extend( groups_index_dic[group] )
-                            plot_title += group + ', '
-                    
-                    self.results_DF_processed = self.results_DF_processed.loc[ index_group_list ]
-            
-            plot_title = plot_title[ : -2]
-            #print('\nDF pós filtro:')
-            #print(self.results_DF_processed)
+        #filtrando cats em colunas (quando filtra se determina um plot_title para mostrar o que foi filtrado)
+        self.results_DF_processed, plot_title = filter_categories(self.results_DF_processed, 
+                                                                columns_checked_in_DF, 
+                                                                cats_terms_to_filter)
 
         #Eliminando os NaN
         self.results_DF_processed = self.results_DF_processed[ [ cats_col[0], cats_col[1], num_col ] ]
@@ -927,7 +884,7 @@ class results(object):
                         self.stats_results[f'heatmap_{stats_method}_{cats_col[0]}_{cats_col[1]}_{num_col}_{str(cats_terms_to_filter)}'].append(
                             f'{cat_cat1} - {stat_func_to_group} = {cat_cat_stat_func_dic[cat_cat1] / z_multiplier} : {cat_cat2} - {stat_func_to_group} = {cat_cat_stat_func_dic[cat_cat2] / z_multiplier} : p-val = {p}')
 
-                save_dic_to_json(self.diretorio + '/Outputs/log/stats_results.json', self.stats_results)
+                save_dic_to_json(self.diretorio + '/Outputs/analyses/dic_stats_results.json', self.stats_results)
 
 
             #caso o número de categorias inserido seja maior que o número de grupos com valores numéricos
@@ -971,7 +928,7 @@ class results(object):
                     print(i, ':', j)
 
 
-            self.cat_cat_heatmap(cat_cat_len_array, font_scale = font_scale_grid, plot_title =plot_title,
+            self.cat_cat_heatmap(cat_cat_len_array, font_scale = font_scale_grid, plot_title = plot_title,
                                 x_label = x_label, y_label = y_label, bar_label = bar_label, x_label_rotation = x_label_rotation,
                                 box_vals = cat_cat_men_val_array, x_annotation_delta = x_annotation_delta, y_annotation_delta = y_annotation_delta, 
                                 box_values_font_scale = box_values_font_scale, plot_counter = plot_counter, plot_margins = grid_plot_margins)
@@ -981,14 +938,13 @@ class results(object):
 
 
 
-
     def plot_scatter_graph(self, num_cols = [], stat_func_to_extract_x = 'mean', stat_func_to_extract_y = 'mean',
                            x_multiplier = None, y_multiplier = None, remove_extreme_vals_for_mean = None,
                            log_scale_x = False, log_scale_y = False,
                            min_num_vals_occur = 11,
                            stats_method = 'permutation', #anova #bootstrap #permutation
                            cats_terms_to_plot = ( '' , [''] ),
-                           cats_terms_to_filter = { '' : [''] },
+                           cats_terms_to_filter = { 'col1' : ['term1', 'term2'] },
                            x_lims = [], y_lims = [], x_label = None, y_label = None,
                            set_graph_region = None):
         
@@ -998,34 +954,21 @@ class results(object):
         print('> cats_terms_to_filter', cats_terms_to_filter)
 
         #copiando a DF para processar
-        check_cats_to_filter = check_cats_in_DF( list(cats_terms_to_filter.keys()) , self.results_DF_copy )
-        check_cats_to_plot = check_cats_in_DF( [ cats_terms_to_plot[0] ] , self.results_DF_copy )
-        if check_cats_to_filter is True and check_cats_to_plot is True:
+        columns_checked_in_DF = check_columns_in_DF( list(cats_terms_to_filter.keys()) , self.results_DF_copy )
+        check_cats_to_plot = check_columns_in_DF( [ cats_terms_to_plot[0] ] , self.results_DF_copy )
+        if columns_checked_in_DF is True and check_cats_to_plot is True:
             self.results_DF_processed = self.results_DF_copy[ num_cols + [ cats_terms_to_plot[0] ] + list(cats_terms_to_filter.keys()) ].copy()
-        elif check_cats_to_filter is True and check_cats_to_plot is False:
+        elif columns_checked_in_DF is True and check_cats_to_plot is False:
             self.results_DF_processed = self.results_DF_copy[ num_cols + list(cats_terms_to_filter.keys()) ].copy()
-        elif check_cats_to_filter is False and check_cats_to_plot is True:
-            self.results_DF_processed = self.results_DF_copy[ num_cols + [ cats_terms_to_plot[0] ] ].copy()    
+        elif columns_checked_in_DF is False and check_cats_to_plot is True:
+            self.results_DF_processed = self.results_DF_copy[ num_cols + [ cats_terms_to_plot[0] ] ].copy()
         else:
             self.results_DF_processed = self.results_DF_copy[ num_cols ].copy()
         
-        #filtrando categorias
-        plot_title = ''
-        if check_cats_to_filter is True:
-            for cat in cats_terms_to_filter.keys():
-                if type(cats_terms_to_filter[cat]) == list and len(cats_terms_to_filter[cat]) > 0:
-                    groups_index_dic = self.results_DF_processed.groupby(by=cat).groups
-                    index_group_list = []
-                    for group in groups_index_dic:
-                        if group in cats_terms_to_filter[cat]:
-                            index_group_list.extend( groups_index_dic[group] )
-                            plot_title += group + ', '
-                    
-                    self.results_DF_processed = self.results_DF_processed.loc[ index_group_list ]
-            
-            plot_title = plot_title[ : -2]
-            #print('\nDF pós filtro:')
-            #print(self.results_DF_processed)
+        #filtrando cats em colunas (quando filtra se determina um plot_title para mostrar o que foi filtrado)
+        self.results_DF_processed, plot_title = filter_categories(self.results_DF_processed, 
+                                                                columns_checked_in_DF, 
+                                                                cats_terms_to_filter)
 
         #Eliminando os NaN
         self.results_DF_processed = remove_nan(self.results_DF_processed)
@@ -1189,7 +1132,7 @@ class results(object):
                             self.stats_results[f'scattergraph_{stats_method}_{num_cols[0]}_{num_cols[1]}_{cats_terms_to_plot[0]}_{str(cats_terms_to_filter)}'].append(
                                 f'{num_col} > {cat1} - mean = { stats_test_stats_col_cat_val[num_col][cat1] / multiplier} : {cat2} - mean = { stats_test_stats_col_cat_val[num_col][cat2] / multiplier} : p-val = {p}')
                             
-                save_dic_to_json(self.diretorio + '/Outputs/log/stats_results.json', self.stats_results)
+                save_dic_to_json(self.diretorio + '/Outputs/analyses/dic_stats_results.json', self.stats_results)
 
                 #plotando cada par de cats com p < 0.05
                 for cat1, cat2 in cats_cols_to_plot.keys():
@@ -1205,9 +1148,112 @@ class results(object):
 
 
 
+    def plot_axis_column_scatter_graph(self, num_col = None, cat_cols = [],
+                                       stat_func_to_extract_y = 'mean', y_multiplier = 1,
+                                       log_scale_y = False, x_label_rotation = 70,
+                                       y_lims = [], y_label = None,
+                                       font_scale_scatter_plot = 10, plotcircle_size = 1,
+                                       y_bin_val = 10, offset_set = 0.1,
+                                       g1_label = '', g2_label = '',
+                                       x_labels_to_replace = {},
+                                       cols_terms_to_remove = {'col1' : ['term1', 'term2']},
+                                       cats_terms_to_filter = { 'col1' : ['term1', 'term2'] },
+                                       representation_mode = 'random_spread',
+                                       export_cats_len_json = False):
+
+        print('\n> function: plot_axes_column_scatter_graph: ', num_col, cat_cols)
+
+        #copiando a DF para processar
+        columns_checked_in_DF = check_columns_in_DF( list(cats_terms_to_filter.keys()) , self.results_DF_copy )
+        if columns_checked_in_DF is True:
+            self.results_DF_processed = self.results_DF_copy[ [ num_col] + cat_cols + list(cats_terms_to_filter.keys()) ].copy()
+        else:
+            self.results_DF_processed = self.results_DF_copy[ [ num_col] + cat_cols].copy()
+
+        #checando se as categorias estão no DF
+        for col in [num_col] + cat_cols:
+            if col not in self.results_DF_processed.columns:
+                print(f'  Erro! A col {col} não está presente no DF.')
+                print('  Cats presentes: ', self.results_DF_processed.columns)
+                return
+        
+        #removendo termos presentes na lista terms
+        for col in cols_terms_to_remove.keys():
+            #caso a col não esteja no DF
+            try:
+                for term in cols_terms_to_remove[col]:
+                    if term in self.results_DF_processed[col].values:
+                        self.results_DF_processed = self.results_DF_processed.reset_index().set_index(col).drop(index = term).reset_index().set_index(['Filename', 'Counter'])
+            except KeyError:
+                pass
+
+        #filtrando cats em colunas (quando filtra se determina um plot_title para mostrar o que foi filtrado)
+        self.results_DF_processed, plot_title = filter_categories(self.results_DF_processed, 
+                                                                columns_checked_in_DF, 
+                                                                cats_terms_to_filter)
+
+        col_cat_vals_len_dic = {}
+        for col in cat_cols:
+
+            #Eliminando os NaN
+            temp_results_DF_processed = self.results_DF_processed[ [col, num_col] ].copy()
+            temp_results_DF_processed = remove_nan(temp_results_DF_processed)
+
+            #removendo as duplicatas
+            temp_results_DF_processed = remove_duplicates(temp_results_DF_processed, columns_to_consider = [col, num_col])
+
+            #extraindo os valores numéricos
+            vals = self.extract_vals_from_df_str(indexes = temp_results_DF_processed.index, 
+                                                num_col = num_col, 
+                                                mode = stat_func_to_extract_y, 
+                                                axis_multiplier = y_multiplier,
+                                                interval_to_filter = y_lims)
+            
+            #agrupando os termos
+            groups_index_dic = self.results_DF_processed.groupby(by=col).groups
+
+            #extraindo os valores numéricos para cada grupo
+            col_cat_vals_len_dic[col] = []
+            for cat in groups_index_dic.keys():
+                vals = self.extract_vals_from_df_str(indexes = groups_index_dic[ cat ], 
+                                                num_col = num_col,
+                                                mode = stat_func_to_extract_y,
+                                                interval_to_filter = y_lims,
+                                                axis_multiplier = y_multiplier)
+
+                vals = vals[~np.isnan(vals.astype(float))]
+                if len(vals) > 0:
+                    col_cat_vals_len_dic[col].append( (cat, vals, len(vals)) )
+                
+                #if len(vals) >= min_num_vals_occur:
+                #vals_cat_dic[ cat ] = vals
+                #cat_len_list.append((cat, len(vals)))
+
+            if export_cats_len_json is True:            
+                cat_len_to_export = sorted([ (cat, n_vals) for cat, vals, n_vals in col_cat_vals_len_dic[col] ], key = lambda x: x[1])[::-1]
+                self.cat_len_results[f'{num_col}_{col}_{cats_terms_to_filter}'] = dict(cat_len_to_export)
+                save_dic_to_json(self.diretorio + f'/Outputs/analyses/dic_cat_len_results.json', self.cat_len_results, sort = False)
+
+
+        #procurando se já existe o setup do plot
+        plot_counter = self.get_plot_counter(f'plot_axis_column_scatter_graph_{num_col}_{cat_cols}_{cats_terms_to_filter}')
+
+        self.axis_scatter_plots(col_cat_vals_len_dic,
+                                log_scale = log_scale_y, y_lims = y_lims, 
+                                y_label = y_label, x_label_rotation = x_label_rotation, 
+                                y_bin_val = y_bin_val, offset_set = offset_set, plotcircle_size = plotcircle_size,
+                                font_scale_axis_scatter = font_scale_scatter_plot, plot_counter = plot_counter, 
+                                plot_title = plot_title, plot_plot_margins = {'left':0.3},
+                                g1_label = g1_label, g2_label = g2_label,
+                                x_labels_to_replace = x_labels_to_replace,
+                                representation_mode = representation_mode)
+
+
+
+
     def cat_barv(self, categories = [], values_a = [], values_b = [],
                  font_scale = None, x_label = None, y1_label = None, y2_label = None,
-                 y1_lims = None, y2_lims = None,
+                 y1_lims = [], y2_lims = [],
                  plot_counter = None, x_label_rotation = 70, plot_title = ''):
 
         # Set positions for each category on the x-axis
@@ -1284,9 +1330,9 @@ class results(object):
         
         #salvando a figura
         filename = get_tag_name(plot_counter, prefix = '')
-        plt.savefig(self.diretorio + f'/Outputs/plots/{filename}.png', dpi=200, bbox_inches='tight', pad_inches=0.8)
-        print(f'  salvando a figura {filename}...\n')
-        save_dic_to_json(self.diretorio + '/Outputs/log/plotsetup.json', self.plotsetup)
+        plt.savefig(self.diretorio + f'/Outputs/analyses/{filename}.png', dpi=200, bbox_inches='tight', pad_inches=0.8)
+        print(f'  salvando a figura {filename}...')
+        save_dic_to_json(self.diretorio + '/Outputs/analyses/dic_plotsetup.json', self.plotsetup)
 
 
 
@@ -1333,9 +1379,9 @@ class results(object):
 
         #salvando a figura
         filename = get_tag_name(plot_counter, prefix = '')
-        plt.savefig(self.diretorio + f'/Outputs/plots/{filename}.png', dpi=200, bbox_inches='tight', pad_inches=0.5)
-        print(f'  salvando a figura {filename}...\n')
-        save_dic_to_json(self.diretorio + '/Outputs/log/plotsetup.json', self.plotsetup)
+        plt.savefig(self.diretorio + f'/Outputs/analyses/{filename}.png', dpi=200, bbox_inches='tight', pad_inches=0.5)
+        print(f'  salvando a figura {filename}...')
+        save_dic_to_json(self.diretorio + '/Outputs/analyses/dic_plotsetup.json', self.plotsetup)
 
 
 
@@ -1343,7 +1389,7 @@ class results(object):
     def cat_cat_heatmap(self, cat_cat_val_array, font_scale = None, box_vals = None, box_values_font_scale = None,
                         x_label = None, y_label = None, bar_label = None, x_label_rotation = 70, plot_title = '',
                         x_annotation_delta = 0, y_annotation_delta = 0, plot_counter = None, 
-                        plot_margins = {}, replace_terms_to_plot = {}):
+                        plot_margins = {}, replace_terms_to_plot = { 'term1' : 'term_to_replace'}):
 
 
         #registrando o max-min vals
@@ -1459,7 +1505,7 @@ class results(object):
             counter += 1
             try:
                 x_tick_labels[counter] = replace_terms_to_plot[label]
-                print('Replacing term to plot: ', label, '->', replace_terms_to_plot[label])
+                print('  Replacing term to plot: ', label, '->', replace_terms_to_plot[label])
             except KeyError:
                 pass
         
@@ -1468,7 +1514,7 @@ class results(object):
             counter += 1            
             try:
                 y_tick_labels[counter] = replace_terms_to_plot[label]
-                print('Replacing term to plot: ', label, '->', replace_terms_to_plot[label])
+                print('  Replacing term to plot: ', label, '->', replace_terms_to_plot[label])
             except KeyError:
                 pass
                 
@@ -1497,7 +1543,7 @@ class results(object):
             for i in range(len(vals)):
                 if vals[i] < box_vals:
                     ax1.annotate('*', xy=(x[i] - x_annotation_delta * box_values_font_scale, y[i] - y_annotation_delta * box_values_font_scale),
-                                 c='black', ha='center', fontsize = box_values_font_scale, alpha = 0.7)
+                                 c=self.contrast_text_color_to_plot, ha='center', fontsize = box_values_font_scale, alpha = 0.7)
 
         elif box_vals is not None and len(box_vals) > 1:
             for i in range(len(box_vals)):
@@ -1507,14 +1553,13 @@ class results(object):
         #adicionando a barra lateral
         ax2 = plt.subplot(plot_grid[ : , - 1 :  ]) # Use the rightmost column of the plot
 
-        col_x = [0]*len(palette) # Fixed x coordinate for the bars
         bar_y=np.linspace(min_counts_val, max_counts_val, n_colors) # y coordinates for each of the n_colors bars
 
         bar_height = bar_y[1] - bar_y[0]
         ax2.barh(
             y=bar_y,
-            width=[5]*len(palette), # Make bars 5 units wide
-            left=col_x, # Make bars start at 0
+            width=2,
+            left=0,
             height=bar_height,
             color=palette,
             linewidth=0
@@ -1537,16 +1582,16 @@ class results(object):
         
         #salvando a figura
         filename = get_tag_name(plot_counter, prefix = '')
-        plt.savefig(self.diretorio + f'/Outputs/plots/{filename}.png', dpi=200, bbox_inches='tight', pad_inches=0.5)
-        print(f'  salvando a figura {filename}...\n')
-        save_dic_to_json(self.diretorio + '/Outputs/log/plotsetup.json', self.plotsetup)
+        plt.savefig(self.diretorio + f'/Outputs/analyses/{filename}.png', dpi=200, bbox_inches='tight', pad_inches=0.5)
+        print(f'  salvando a figura {filename}...')
+        save_dic_to_json(self.diretorio + '/Outputs/analyses/dic_plotsetup.json', self.plotsetup)
 
 
 
     def box_plot(self, nums_grouped = None, cats_grouped = None, n_cats = None, n_points_per_box = None,
-                 log_scale = False, y_lims = None, x_label = None, y_label = None, x_label_rotation = 70,
+                 log_scale = False, y_lims = [], x_label = None, y_label = None, x_label_rotation = 70,
                  font_scale_boxplot = None, plot_counter = None, plot_margins = {}, plot_title = '',
-                 replace_terms_to_plot = {}, exclude_outliers = False):
+                 replace_terms_to_plot = { 'term1' : 'term_to_replace'}, exclude_outliers = False):
 
         #plotando as figuras
         fig = plt.figure(figsize=(20, 15))
@@ -1574,7 +1619,7 @@ class results(object):
                            patch_artist=True)
 
         n_colors = n_cats
-        palette = sns.color_palette(self.color_palette, n_colors) # Create the palette
+        palette = sns.color_palette(self.color_palette, n_colors)
 
         # fill with colors
         for patch, color in zip(bplot['boxes'], palette):
@@ -1624,7 +1669,7 @@ class results(object):
             counter += 1
             try:
                 cats_grouped_[counter] = replace_terms_to_plot[label]
-                print('Replacing term to plot: ', label, '->', replace_terms_to_plot[label])
+                print('  Replacing term to plot: ', label, '->', replace_terms_to_plot[label])
             except KeyError:
                 continue
 
@@ -1674,9 +1719,9 @@ class results(object):
 
         #salvando a figura
         filename = get_tag_name(plot_counter, prefix = '')
-        plt.savefig(self.diretorio + f'/Outputs/plots/{filename}.png', dpi=200, bbox_inches='tight', pad_inches=0.5)
-        print(f'  salvando a figura {filename}...\n')
-        save_dic_to_json(self.diretorio + '/Outputs/log/plotsetup.json', self.plotsetup)
+        plt.savefig(self.diretorio + f'/Outputs/analyses/{filename}.png', dpi=200, bbox_inches='tight', pad_inches=0.5)
+        print(f'  salvando a figura {filename}...')
+        save_dic_to_json(self.diretorio + '/Outputs/analyses/dic_plotsetup.json', self.plotsetup)
 
         return nums_grouped
 
@@ -1909,25 +1954,229 @@ class results(object):
 
         #salvando a figura
         filename = get_tag_name(plot_counter, prefix = '')
-        plt.savefig(self.diretorio + f'/Outputs/plots/{filename}.png', dpi=200, bbox_inches='tight', pad_inches=0.5)
-        print(f'  salvando a figura {filename}...\n')
-        save_dic_to_json(self.diretorio + '/Outputs/log/plotsetup.json', self.plotsetup)
+        plt.savefig(self.diretorio + f'/Outputs/analyses/{filename}.png', dpi=200, bbox_inches='tight', pad_inches=0.5)
+        print(f'  salvando a figura {filename}...')
+        save_dic_to_json(self.diretorio + '/Outputs/analyses/dic_plotsetup.json', self.plotsetup)
 
 
 
-def check_cats_in_DF(cats_to_check, DF):
+    def axis_scatter_plots(self, col_cat_vals_len_dic, 
+                            log_scale = False, y_lims = [], 
+                            y_label = None, x_label_rotation = 70, 
+                            font_scale_axis_scatter = 10, 
+                            y_bin_val = 10, offset_set = 0.1, plotcircle_size = 1,
+                            plot_counter = None, g1_label = '', g2_label = '',
+                            plot_title = '', plot_plot_margins = {'left':0.05, 'right':0.05, 'top':0.05, 'bottom':0.05},
+                            x_labels_to_replace = {'': ''},
+                            representation_mode = 'random_spread'):
+
+        g1_span = 4
+        g2_span = 4
+
+        #plotando as figuras
+        fig = plt.figure(figsize=(35, 15))
+        plot_grid = gridspec.GridSpec(40, len(col_cat_vals_len_dic) * (g1_span + 1) + len(col_cat_vals_len_dic) * (g2_span + 1), 
+                                      figure = fig) 
+        plot_grid.update(wspace=0.05, hspace=0.05, **plot_plot_margins)
+
+        
+        #gerando as tuplas para plot
+        def gen_gridplot_intervals(g1_span: int = 1, g2_span: int = 2, vals_len: int = 10):
+        
+            start = 0
+            intervals = []
+            for _ in range(vals_len):
+                end_g1 = g1_span + start
+                end_g2 = end_g1 + g2_span + 1
+                intervals.append( ( (start, end_g1) , (end_g1 + 1, end_g2) ) )
+                start = end_g2 + 1
+            
+            return intervals
+
+        plots = {}
+        counter_columns = 0
+        for (g1_i, g1_f), (g2_i, g2_f) in gen_gridplot_intervals(g1_span = g1_span, g2_span = g2_span, 
+                                                                 vals_len = len(col_cat_vals_len_dic)):
+            #plotando a figura principal
+            plots[str(counter_columns) + 'b1'] = fig.add_subplot(plot_grid[ 1 : 3 , g1_i : g1_f ])
+            plots[str(counter_columns) + 'b2'] = fig.add_subplot(plot_grid[ 1 : 3 , g2_i : g2_f ])
+            plots[str(counter_columns) + 'g1'] = fig.add_subplot(plot_grid[ 4 : 40 , g1_i : g1_f ])
+            plots[str(counter_columns) + 'g2'] = fig.add_subplot(plot_grid[ 4 : 40 , g2_i : g2_f ])
+            counter_columns += 1
+
+
+        counter_columns = 0
+        for col in col_cat_vals_len_dic.keys():
+            
+            for var, graph_n, definition in [('cat', '1', g1_label), ('n_vals', '2', g2_label)]:
+                
+                #plotando os gráficos
+                if var == 'cat':
+                    cats = sorted(set([ cat for cat, vals, n_vals in col_cat_vals_len_dic[col] ]))
+                    cat_i = dict([ (cat, i) for i, cat in enumerate(cats) ])
+                    i_s = list(cat_i.values())
+                elif var == 'n_vals':
+                    i_s = sorted(set([ n_vals for cat, vals, n_vals in col_cat_vals_len_dic[col] ]))
+
+                #associando uma cor a cada cat
+                n_colors = 256
+                palette = sns.color_palette(self.color_palette, n_colors=n_colors)
+                min_val, max_val = [ min(i_s) , max(i_s) ]
+
+                def value_to_color(val):
+                    try:
+                        val_position = float((val - min_val)) / (max_val - min_val) # position of value in the input range, relative to the length of the input range
+                        ind = int(val_position * (n_colors - 1)) # target index in the color palette
+                        return palette[ind]
+                    #caso só haja um valor para associar à cor
+                    except ZeroDivisionError:
+                        if val == 1:
+                            return palette[-1]
+                        elif val == 0:
+                            return palette[0]
+            
+                x = []
+                y = []
+                c = []
+                for cat, vals, n_vals in col_cat_vals_len_dic[col]:
+                    
+                    #y
+                    bin_vals = np.floor_divide(vals, y_bin_val) * y_bin_val #bin y values to facilitate visualization
+                    y.extend( list(bin_vals) )
+
+                    #c                    
+                    if var == 'cat':
+                        c.extend( [value_to_color(cat_i[cat])] * len(vals) )
+                    elif var == 'n_vals':                    
+                        c.extend( [value_to_color(n_vals)] * len(vals) )
+
+                #x
+                if representation_mode == 'random_spread':
+                    max_offset = 0.4
+                    x =  list(np.random.uniform(low = - max_offset, high = + max_offset, size = len(y)) )
+                
+                elif representation_mode == 'bin_swarm_spread':
+                    # Prepare x-offsets: spread identical y-values evenly
+                    unique_y = np.unique(y)
+                    x = np.zeros_like(y, dtype=float)
+
+                    for yi in unique_y:
+                        
+                        idx = np.where(y == yi)[0]
+                        n = len(idx)
+                        if n > 1:
+                            # offsets: … −2·step, −step, 0, +step, +2·step, …
+                            offsets = (np.arange(n) - (n-1)/2) * offset_set
+                        else:
+                            offsets = np.array([0])
+
+                        x[idx] = 1 + offsets
+                        
+                plots[str(counter_columns) + f'g{graph_n}'].scatter(x = x, y = y, s=plotcircle_size,
+                                                                    color = c, alpha=0.7)
+
+                if y_lims is not None:
+                    plots[str(counter_columns) + f'g{graph_n}'].set_ylim([y_lims[0], y_lims[1]])
+
+                if log_scale is True:
+                    plots[str(counter_columns) + f'g{graph_n}'].set_yscale('log')
+
+                plots[str(counter_columns) + f'g{graph_n}'].yaxis.grid(True, linewidth = 2, c='gray', alpha=0.4)
+
+                try:
+                    x_label = x_labels_to_replace[col]
+                except KeyError:
+                    x_label = col
+                
+                ha_aligment = 'right' if x_label_rotation != 90 else 'center'
+                plots[str(counter_columns) + f'g{graph_n}'].set_xlabel(x_label,
+                                                                       fontsize = font_scale_axis_scatter,
+                                                                       rotation = x_label_rotation,
+                                                                       labelpad = 20,
+                                                                       ha = ha_aligment)
+                
+
+                #plotando as barras
+                bar_x=np.linspace(min_val, max_val, n_colors) # y coordinates for each of the n_colors bars
+
+                bar_width = bar_x[1] - bar_x[0]
+                plots[str(counter_columns) + f'b{graph_n}'].bar(x=bar_x,
+                                                                height = 2,
+                                                                bottom = 0,
+                                                                width=bar_width,
+                                                                color=palette,
+                                                                linewidth=0)
+                
+                plots[str(counter_columns) + f'b{graph_n}'].tick_params(axis='x', labelsize=font_scale_axis_scatter)
+                plots[str(counter_columns) + f'b{graph_n}'].set_ylim(0, 2) # Bars are going from 0 to 5, so lets crop the plot somewhere in the middle
+                plots[str(counter_columns) + f'b{graph_n}'].grid(False) # Hide grid
+                plots[str(counter_columns) + f'b{graph_n}'].set_facecolor('white') # Make background white
+                plots[str(counter_columns) + f'b{graph_n}'].set_yticks([]) # Remove horizontal ticks
+                plots[str(counter_columns) + f'b{graph_n}'].set_xticks([min_val, max_val]) # Show vertical ticks for min, middle and max
+                plots[str(counter_columns) + f'b{graph_n}'].spines['top'].set_visible(False)
+                plots[str(counter_columns) + f'b{graph_n}'].spines['bottom'].set_visible(False)
+                plots[str(counter_columns) + f'b{graph_n}'].spines['left'].set_visible(False)
+                plots[str(counter_columns) + f'b{graph_n}'].spines['right'].set_visible(False)
+                plots[str(counter_columns) + f'b{graph_n}'].xaxis.tick_top() # Show vertical ticks on the right
+                plots[str(counter_columns) + f'b{graph_n}'].set_xlabel(definition, labelpad = 20, fontdict={'fontsize':font_scale_axis_scatter})
+                plots[str(counter_columns) + f'b{graph_n}'].xaxis.set_label_position("top")                
+
+                #ajustando os contornos
+                if counter_columns == 0 and graph_n == '1':
+                    plots[str(counter_columns) + f'g{graph_n}'].spines['top'].set_visible(False)
+                    plots[str(counter_columns) + f'g{graph_n}'].spines['bottom'].set_visible(False)
+                    plots[str(counter_columns) + f'g{graph_n}'].spines['left'].set_visible(False)
+                    plots[str(counter_columns) + f'g{graph_n}'].spines['right'].set_visible(False)
+                    
+                    plots[str(counter_columns) + f'g{graph_n}'].set_xticks([])
+                    plots[str(counter_columns) + f'g{graph_n}'].tick_params(axis='y', which='both', left = True, 
+                                                                            labelsize = font_scale_axis_scatter, 
+                                                                            length = 1, width = 1, color='white', 
+                                                                            direction = 'out')
+                    
+                    if y_label is not None:
+                        plots[str(counter_columns) + f'g{graph_n}'].set_ylabel(y_label, labelpad = 20, 
+                                                                               fontsize = font_scale_axis_scatter)
+                            
+                else:
+                    plots[str(counter_columns) + f'g{graph_n}'].spines['top'].set_visible(False)
+                    plots[str(counter_columns) + f'g{graph_n}'].spines['bottom'].set_visible(False)
+                    plots[str(counter_columns) + f'g{graph_n}'].spines['left'].set_visible(False)
+                    plots[str(counter_columns) + f'g{graph_n}'].spines['right'].set_visible(False)
+                    plots[str(counter_columns) + f'g{graph_n}'].set_xticks([])
+                    plots[str(counter_columns) + f'g{graph_n}'].tick_params(which='both',
+                                                                            bottom=False,      # remove ticks on the bottom
+                                                                            top=False,         # remove ticks on the top
+                                                                            left=False,        # remove ticks on the left
+                                                                            right=False,       # remove ticks on the right
+                                                                            labelbottom=False,  # keep the labels if you want them
+                                                                            labelleft=False)
+
+            counter_columns +=1
+
+
+        
+        #salvando a figura
+        filename = get_tag_name(plot_counter, prefix = '')
+        plt.savefig(self.diretorio + f'/Outputs/analyses/{filename}.png', dpi=200, bbox_inches='tight', pad_inches=0.5)
+        print(f'  salvando a figura {filename}...')
+        save_dic_to_json(self.diretorio + '/Outputs/analyses/dic_plotsetup.json', self.plotsetup)
+
+
+
+def check_columns_in_DF(columns_to_check, DF):
     
     #checando se todas as cats estão no DF
-    all_cats_check = True
+    all_columns_check = True
     
-    for cat in cats_to_check:
-        if cat in DF.columns:
+    for column in columns_to_check:
+        if column in DF.columns:
             continue
         else:
-            all_cats_check = False
+            all_columns_check = False
             break
 
-    return all_cats_check
+    return all_columns_check
 
 
 
@@ -1949,6 +2198,29 @@ def remove_nan(df):
 
     return df
 
+
+
+def filter_categories(df, columns_checked_in_DF : bool, cats_terms_to_filter : dict):
+        
+    #filtrando categorias
+    cats_text = ''
+    if columns_checked_in_DF is True:
+        for cat in cats_terms_to_filter.keys():
+            if type(cats_terms_to_filter[cat]) == list and len(cats_terms_to_filter[cat]) > 0:
+                groups_index_dic = df.groupby(by=cat).groups
+                index_group_list = []
+                for group in groups_index_dic:
+                    if group in cats_terms_to_filter[cat]:
+                        index_group_list.extend( groups_index_dic[group] )
+                        cats_text += group + ', '
+                
+                df = df.loc[ index_group_list ]
+        
+        cats_text = cats_text[ : -2]
+        #print('\nDF pós filtro:')
+        #print(self.results_DF_processed)
+
+    return df, cats_text
 
 
 
@@ -2528,8 +2800,8 @@ def remove_nan(df):
         
         #plotando
         
-        print(f'Salvando a figura ~/Outputs/Plots/P{self.last_fig_filename_index}.png ...')
-        export_png(layout, filename=self.diretorio + f'/Outputs/Plots/P{self.last_fig_filename_index}.png')
+        print(f'Salvando a figura ~/Outputs/analyses/P{self.last_fig_filename_index}.png ...')
+        export_png(layout, filename=self.diretorio + f'/Outputs/analyses/P{self.last_fig_filename_index}.png')
         
         #atualizando o número do plot_index
         self.last_fig_filename_index = ( ( len('0000') - len(str(int(self.last_fig_filename_index)+1)) ) * '0' ) + str(int(self.last_fig_filename_index) + 1)
@@ -3228,8 +3500,8 @@ def remove_nan(df):
 
         layout = gridplot(grid_list)
         
-        print(f'Salvando a figura ~/Outputs/Plots/P{self.last_fig_filename_index}.png ...')
-        export_png(layout, filename=self.diretorio + f'/Outputs/Plots/P{self.last_fig_filename_index}.png')        
+        print(f'Salvando a figura ~/Outputs/analyses/P{self.last_fig_filename_index}.png ...')
+        export_png(layout, filename=self.diretorio + f'/Outputs/analyses/P{self.last_fig_filename_index}.png')        
         
         #atualizando o número do plot_index
         self.last_fig_filename_index = ( ( len('0000') - len(str(int(self.last_fig_filename_index)+1)) ) * '0' ) + str(int(self.last_fig_filename_index) + 1)
@@ -3357,8 +3629,8 @@ def remove_nan(df):
                 show(layout)
             
             else:            
-                print(f'Salvando a figura ~/Outputs/Plots/P{self.last_fig_filename_index}.png ...')
-                export_png(layout, filename=self.diretorio + f'/Outputs/Plots/P{self.last_fig_filename_index}.png')
+                print(f'Salvando a figura ~/Outputs/analyses/P{self.last_fig_filename_index}.png ...')
+                export_png(layout, filename=self.diretorio + f'/Outputs/analyses/P{self.last_fig_filename_index}.png')
     
                 #salvando os grupos
                 if export_groups_to_csv is True:
@@ -3822,8 +4094,8 @@ def remove_nan(df):
             # Defining the position of the color bar
             p.add_layout(color_bar, 'above')
 
-        print(f'Salvando a figura ~/Outputs/Plots/P{self.last_fig_filename_index}.png ...')
-        export_png(p, filename=self.diretorio + f'/Outputs/Plots/P{self.last_fig_filename_index}.png')
+        print(f'Salvando a figura ~/Outputs/analyses/P{self.last_fig_filename_index}.png ...')
+        export_png(p, filename=self.diretorio + f'/Outputs/analyses/P{self.last_fig_filename_index}.png')
         
         #atualizando o número do plot_index
         self.last_fig_filename_index = ( ( len('0000') - len(str(int(self.last_fig_filename_index)+1)) ) * '0' ) + str(int(self.last_fig_filename_index) + 1)
@@ -3884,8 +4156,8 @@ def remove_nan(df):
                               labels='name', node_color=dim('index').str()))
         chord.opts(label_text_font_size='23pt')
         
-        print(f'Salvando a figura ~/Outputs/Plots/P{self.last_fig_filename_index}.png ...')
-        hv.save(chord, self.diretorio + f'/Outputs/Plots/P{self.last_fig_filename_index}.png', backend='bokeh')
+        print(f'Salvando a figura ~/Outputs/analyses/P{self.last_fig_filename_index}.png ...')
+        hv.save(chord, self.diretorio + f'/Outputs/analyses/P{self.last_fig_filename_index}.png', backend='bokeh')
         
         #atualizando o número do plot_index
         self.last_fig_filename_index = ( ( len('0000') - len(str(int(self.last_fig_filename_index)+1)) ) * '0' ) + str(int(self.last_fig_filename_index) + 1)
@@ -3998,8 +4270,8 @@ def remove_nan(df):
             save_dic_to_json(self.diretorio + '/Inputs/Index_lists.json', index_lists_dic)
             print('Salvando a index_list dos grupos em ~/Inputs/Index_lists.json ...')
 
-        print(f'Salvando a figura ~/Outputs/Plots/P{self.last_fig_filename_index}.png ...')
-        export_png(p, filename=self.diretorio + f'/Outputs/Plots/P{self.last_fig_filename_index}.png')
+        print(f'Salvando a figura ~/Outputs/analyses/P{self.last_fig_filename_index}.png ...')
+        export_png(p, filename=self.diretorio + f'/Outputs/analyses/P{self.last_fig_filename_index}.png')
         
         #atualizando o número do plot_index
         self.last_fig_filename_index = ( ( len('0000') - len(str(int(self.last_fig_filename_index)+1)) ) * '0' ) + str(int(self.last_fig_filename_index) + 1)
@@ -4076,8 +4348,8 @@ def remove_nan(df):
         
         p.add_layout(color_bar, 'above')
         
-        print(f'Salvando a figura ~/Outputs/Plots/P{self.last_fig_filename_index}.png ...')
-        export_png(p, filename=self.diretorio + f'/Outputs/Plots/P{self.last_fig_filename_index}.png', width=plot_width, height=plot_height)
+        print(f'Salvando a figura ~/Outputs/analyses/P{self.last_fig_filename_index}.png ...')
+        export_png(p, filename=self.diretorio + f'/Outputs/analyses/P{self.last_fig_filename_index}.png', width=plot_width, height=plot_height)
         
         #atualizando o número do plot_index
         self.last_fig_filename_index = ( ( len('0000') - len(str(int(self.last_fig_filename_index)+1)) ) * '0' ) + str(int(self.last_fig_filename_index) + 1)
@@ -4199,8 +4471,8 @@ def remove_nan(df):
             show(layout)
         
         else:                        
-            print(f'Salvando a figura ~/Outputs/Plots/P{self.last_fig_filename_index}.png ...')
-            export_png(layout, filename=self.diretorio + f'/Outputs/Plots/P{self.last_fig_filename_index}.png')
+            print(f'Salvando a figura ~/Outputs/analyses/P{self.last_fig_filename_index}.png ...')
+            export_png(layout, filename=self.diretorio + f'/Outputs/analyses/P{self.last_fig_filename_index}.png')
             
             #salvando os grupos
             if find_clusters is True and export_groups_to_csv is True:
@@ -4317,8 +4589,8 @@ def remove_nan(df):
             show(layout)
         
         else:                        
-            print(f'Salvando a figura ~/Outputs/Plots/P{self.last_fig_filename_index}.png ...')
-            export_png(layout, filename=self.diretorio + f'/Outputs/Plots/P{self.last_fig_filename_index}.png')
+            print(f'Salvando a figura ~/Outputs/analyses/P{self.last_fig_filename_index}.png ...')
+            export_png(layout, filename=self.diretorio + f'/Outputs/analyses/P{self.last_fig_filename_index}.png')
             
             #salvando os grupos
             if find_clusters is True and export_groups_to_csv is True:
@@ -4426,8 +4698,8 @@ def remove_nan(df):
         
         layout = gridplot([[p, pv], [ph, None]], merge_tools=False)
         
-        print(f'Salvando a figura ~/Outputs/Plots/P{self.last_fig_filename_index}.png ...')
-        export_png(layout, filename=self.diretorio + f'/Outputs/Plots/P{self.last_fig_filename_index}.png')
+        print(f'Salvando a figura ~/Outputs/analyses/P{self.last_fig_filename_index}.png ...')
+        export_png(layout, filename=self.diretorio + f'/Outputs/analyses/P{self.last_fig_filename_index}.png')
         
         #atualizando o número do plot_index
         self.last_fig_filename_index = ( ( len('0000') - len(str(int(self.last_fig_filename_index)+1)) ) * '0' ) + str(int(self.last_fig_filename_index) + 1)
@@ -4552,8 +4824,8 @@ def remove_nan(df):
         
         layout = gridplot([[above, None], [p, pv], [ph, None]], merge_tools=False)
         
-        print(f'Salvando a figura ~/Outputs/Plots/P{self.last_fig_filename_index}.png ...')
-        export_png(layout, filename=self.diretorio + f'/Outputs/Plots/P{self.last_fig_filename_index}.png')
+        print(f'Salvando a figura ~/Outputs/analyses/P{self.last_fig_filename_index}.png ...')
+        export_png(layout, filename=self.diretorio + f'/Outputs/analyses/P{self.last_fig_filename_index}.png')
         
         #salvando os grupos
         if export_groups_to_csv is True:
@@ -4700,8 +4972,8 @@ def remove_nan(df):
         
         layout = gridplot([[c_bars,None], [p, pv], [ph, None]], merge_tools=False)
         
-        print(f'Salvando a figura ~/Outputs/Plots/P{self.last_fig_filename_index}.png ...')
-        export_png(layout, filename=self.diretorio + f'/Outputs/Plots/P{self.last_fig_filename_index}.png')
+        print(f'Salvando a figura ~/Outputs/analyses/P{self.last_fig_filename_index}.png ...')
+        export_png(layout, filename=self.diretorio + f'/Outputs/analyses/P{self.last_fig_filename_index}.png')
         
         #atualizando o número do plot_index
         self.last_fig_filename_index = ( ( len('0000') - len(str(int(self.last_fig_filename_index)+1)) ) * '0' ) + str(int(self.last_fig_filename_index) + 1)
@@ -5246,7 +5518,7 @@ class groups_results(object):
                 self.groups_dic[group_name][result_type] = sorted(self.groups_dic[group_name][result_type] , key = lambda t: t[0])
 
         #econtrando o ultimo numerador dos arquivos de figuras
-        filenames = get_filenames_from_folder(folder = self.diretorio + '/Outputs/Plots', file_type='png')
+        filenames = get_filenames_from_folder(folder = self.diretorio + '/Outputs/analyses', file_type='png')
         try:
             if len(filenames) > 0:
                 fig_filenames = [file for file in filenames if 'P' in file]
@@ -5410,8 +5682,8 @@ class groups_results(object):
         layout = gridplot(grid_list)
         
         
-        print(f'Salvando a figura ~/Outputs/Plots/P{self.last_fig_filename_index}.png ...')
-        export_png(layout, filename=self.diretorio + f'/Outputs/Plots/P{self.last_fig_filename_index}.png')        
+        print(f'Salvando a figura ~/Outputs/analyses/P{self.last_fig_filename_index}.png ...')
+        export_png(layout, filename=self.diretorio + f'/Outputs/analyses/P{self.last_fig_filename_index}.png')        
         
         #atualizando o número do plot_index
         self.last_fig_filename_index = ( ( len('0000') - len(str(int(self.last_fig_filename_index)+1)) ) * '0' ) + str(int(self.last_fig_filename_index) + 1)
