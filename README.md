@@ -87,8 +87,8 @@ After corpus processing, **search routines** can be set to identify and extract 
 
 ## Additional Search Parameters
 
-| Parameter                  | Description |
-|----------------------------|-------------|
+| Parameter | Description | Observation |
+|-------------|-------------|-------------|
 | **`search_token_by_token`** | **`True`** → Searches occurrences **at a token level**. |
 xxxxxx
 | **`lower_sentence_for_semantic`** | **`True`** → Converts input **to lowercase** for semantic search. |
