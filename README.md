@@ -59,7 +59,7 @@ After corpus processing, **search routines** can be set to identify and extract 
 ### 4. `parameter_to_extract`
 - Choose from the available parameters **configured in the program**.
 - **Extraction depends on** **REGEX patterns** and **LLM prompts**.
-- **Current list of parameters**: [🔗 Available Parameters](https://github.com/amaurijp/arix_v2/blob/main/parameters_to_extract.txt).
+- **Current list of parameters**: [🔗 Available Parameters](https://github.com/amaurijp/aRIX/blob/main/parameters_to_extract.txt).
 - To add **new parameters**, modify `functions_PARAMETERS.py` and `LLM.py` in `.../Modules/`.
 
 ### 5. `scan_sent_by_sent`
@@ -80,25 +80,21 @@ After corpus processing, **search routines** can be set to identify and extract 
 
 ### 8. `semantic_entry`
 - Choose from **predefined semantic categories**.
-- **Current categories**: [🔗 Available Categories](https://github.com/amaurijp/arix_v2/blob/main/categories_for_semantic_search.txt).
+- **Current categories**: [🔗 Available Categories](https://github.com/amaurijp/aRIX/blob/main/categories_for_semantic_search.txt).
 - If no **semantic search** is needed, insert `None`.
 
 ---
 
 ## Additional Search Parameters
 
-| Parameter | Description | Observation |
-|-------------|-------------|-------------|
-| **`search_token_by_token`** | **`True`** → Searches occurrences **at a token level**. **`False`** → Searches with **regex.search(pattern, text)**. | This argument is only considered if an entry is specified in the `semantic_entry` field. | 
-| **`lower_sentence_for_semantic`** | **`True`** → Converts input **to lowercase** for semantic search. | This argument is only considered if an entry is specified in the `semantic_entry` field. |
-| **`lda_sents_topic`** | Insert a **topic vector** to be matched with **LDA sentence-level** topics. | Format: (mag<sub>i</sub> * topic<sub>i</sub>). Example: assuming `d = 100 topics`, the entry `(1, 3, 5, 99)` generates a topic vector `[1, 0, 1, 0, 1, 0, ..., 1, 0]`. The magnitude of vector components can be modified:  `(2*1, -1*3, 3*5, 2*99)` → `[2, 0, -1, 0, 3, 0, ..., 2, 0]`. If no LDA-based matching is needed for sentences, insert `None`. |
-| **`lda_articles_topic`** | Insert a **topic vector** to be matched with **LDA article-level** topics. | Use the same format as `lda_sents_topic` |
-| **`lsa_sents_topic`** | Insert a **topic vector** to be matched with **LSA sentence-level** topics. | Use the same format as `lda_sents_topic` |
-| **`lsa_articles_topic`** | Insert a **topic vector** to be matched with **LSA article-level** topics. | Use the same format as `lda_sents_topic` |
-| **`topic_search_mode`** | Use **"cosine"** for **cosine similarity-based** topic matching. |
-| **`cos_thr`** | **Set cosine similarity threshold** (0 to 1). |
-| **`num_param`** | Choose a **numerical parameter** for matching in the input document. |
-| **`filter_section`** | Use **trained CNN filters** to identify sections (*introduction, methodology, results*). |
+| Parameter | Description |
+|-------------|-------------|
+| **`search_token_by_token`** | **`True`** → Searches occurrences **at a token level**. |
+| **`lower_sentence_for_semantic`** | **`True`** → Converts input **to lowercase** for semantic search. |
+| **`lda_sents_topic`** | Insert a **topic vector** to be matched with **LDA sentence-level** topics. |
+| **`lda_articles_topic`** | Insert a **topic vector** to be matched with **LDA article-level** topics. |
+| **`lsa_sents_topic`** | Insert a **topic vector** to be matched with **LSA sentence-level** topics. |
+| **`lsa_articles_topic`** | Insert a **topic vector** to be matched with **LSA article-level** topics. |
 | **`topic_search_mode`** | Use **"cosine"** for **cosine similarity-based** topic matching. |
 | **`cos_thr`** | **Set cosine similarity threshold** (0 to 1). |
 | **`num_param`** | Choose a **numerical parameter** for matching in the input document. |
@@ -110,7 +106,7 @@ After corpus processing, **search routines** can be set to identify and extract 
 - For the `semantic_entry`, the terms present in each category [🔗 Available Categories](https://github.com/amaurijp/arix_v2/blob/main/categories_for_semantic_search.txt) are found during corpus processing by calculating cosine similarities of the word-vector embeddings. Categories and terms already set are in  `.../Inputs/ner_rules.json`. The match attempt will be done using function `regex.search( cat_term , input_document )`.
 - If `search_token_by_token` is `True`, each token (token_i) separated by the space character `\s` in the input document will be split and introduced in function `regex.search( text_to_be_found , token_i )`. Argument `False` will make the input document go through the function `regex.search( text_to_be_found , input_document )`. This field is only considered by the program if an entry is provided in the field `semantic_entry`.
 - The field `lower_sentence_for_semantic` is only considered by the program if an entry is provided in the field `semantic_entry`.
-- For fields `lda_sents_topic`, `lda_articles_topic`, `lsa_sents_topic`, and `lsa_articles_topic`, use the entry in the format `( mag~i~ * topic_i)`, where `topic~i~` is one of the `d` topics defined during the LDA and LSA training and `mag` is the magnitude of this specific topic. For example, considering that `d = 100`, the entry `(1, 3, 5, 99)` generates a topic vector array in the format: `[1, 0, 1, 0, 1, 0, ..., 1, 0]`. The magnitudes of the vector components can be modified as `(2*1, -1*3, 3*5, 2*99)` → `[2, 0, -1, 0, 3, 0, ..., 2, 0]`. If the user does not want to find matches using the topic search engine, insert `None` in the field respective field (`lda_sents_topic`, `lda_articles_topic`, `lsa_sents_topic`, and `lsa_articles_topic`).
+- For fields `lda_sents_topic`, `lda_articles_topic`, `lsa_sents_topic`, and `lsa_articles_topic`, use the entry in the format `( mag_i * topic_i)`, where `topic_i` is one of the `d` topics defined during the LDA and LSA training and `mag` is the magnitude of this specific topic. For example, considering that `d = 100`, the entry `(1, 3, 5, 99)` generates a topic vector array in the format: `[1, 0, 1, 0, 1, 0, ..., 1, 0]`. The magnitudes of the vector components can be modified as `(2*1, -1*3, 3*5, 2*99)` → `[2, 0, -1, 0, 3, 0, ..., 2, 0]`. If the user does not want to find matches using the topic search engine, insert `None` in the field respective field (`lda_sents_topic`, `lda_articles_topic`, `lsa_sents_topic`, and `lsa_articles_topic`).
 - The value set in `cos_thr` will be applied for both LDA and LSA topic engines and this argument is only considered by the program if an entry is provided for the topic engine in fields `lda_sents_topic`, `lda_articles_topic`, `lsa_sents_topic`, and `lsa_articles_topic`.
 - If an entry is provided in `num_param`, a search will be performed to locate the units related to certain parameters in the input document. For example, if `nanomaterial_size` is used, input documents containing text fragments such as `50 nm` or `0.4 um` will be selected by the program. See the [current list of available numerical parameters](https://github.com/amaurijp/arix_v2/blob/main/parameters_to_extract.txt). `None` can be inserted to not use this field.
 - The **program uses convolutional neural networks (CNNs)** to classify document sections.
