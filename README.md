@@ -87,10 +87,7 @@ After corpus processing, **search routines** can be set to identify and extract 
 
 ## Additional Search Parameters
 
-| Parameter | Description | Observation |
-|-------------|-------------|-------------|
-| **`search_token_by_token`** | **`True`** → Searches occurrences **at a token level**. |
-xxxxxx
+| **`search_token_by_token`** | **`True`** → Searches occurrences **at a token level**. |**`False`** → Searches with **regex.search(pattern, text)**. | This argument is only considered if an entry is specified for the Sm engine in the `semantic_entry` field. |
 | **`lower_sentence_for_semantic`** | **`True`** → Converts input **to lowercase** for semantic search. |
 | **`lda_sents_topic`** | Insert a **topic vector** to be matched with **LDA sentence-level** topics. |
 | **`lda_articles_topic`** | Insert a **topic vector** to be matched with **LDA article-level** topics. |
